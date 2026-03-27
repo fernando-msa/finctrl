@@ -163,7 +163,7 @@
 
   initAuth(async (user) => {
     if (!isAdminUser(user)) {
-      toast('Acesso admin permitido apenas para conta técnica autorizada.', 'danger');
+      toast('Sem permissão para acessar este painel.', 'danger');
       window.location.href = '../index.html';
       return;
     }

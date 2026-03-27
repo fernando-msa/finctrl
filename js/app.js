@@ -43,6 +43,7 @@ export const state = {
 };
 
 const ADMIN_EMAILS = ['ribeirojunior270@gmail.com'];
+const ADMIN_ACCESS_MODE = 'all-authenticated'; // 'allowlist' | 'all-authenticated'
 const MAX_TEXT = 180;
 
 export const fmt = (v = 0) =>
@@ -102,6 +103,8 @@ export async function loadRecentLogs(max = 60) {
 }
 
 export function isAdminUser(user = state.user) {
+  if (!user) return false;
+  if (ADMIN_ACCESS_MODE === 'all-authenticated') return true;
   const email = (user?.email || '').trim().toLowerCase();
   return ADMIN_EMAILS.includes(email);
 }
