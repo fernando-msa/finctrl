@@ -1,16 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FinCtrl — Fgts</title>
-  <link rel="stylesheet" href="../css/style.css" />
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FinCtrl — FGTS</title><link rel="stylesheet" href="../css/style.css"></head>
 <body>
-  <div class="wrap" style="padding-top:2rem;">
-    <a class="btn btn-outline" href="../index.html">← Voltar</a>
-    <h1 style="margin-top:1rem;">Página em construção</h1>
-    <p style="color:var(--muted)">Esta seção será publicada nas próximas etapas da configuração.</p>
+<div id="loading-screen"><div class="spinner"></div></div>
+<div id="app-shell" style="display:none;">
+  <header id="app-header">
+    <a href="../index.html" class="logo">Fin<em>Ctrl</em></a>
+    <nav class="nav-tabs">
+      <a class="nav-tab" href="../index.html">📊 Visão Geral</a>
+      <a class="nav-tab" href="dividas.html">💳 Dívidas</a>
+      <a class="nav-tab" href="gastos.html">📋 Gastos</a>
+      <a class="nav-tab active" href="fgts.html">🏦 FGTS</a>
+      <a class="nav-tab" href="metas.html">🎯 Metas</a>
+      <a class="nav-tab" href="plano.html">🗺 Plano</a>
+      <a class="nav-tab admin-only" href="admin.html">🛠 Admin</a>
+    </nav>
+    <div class="user-chip"><img id="user-photo" src="" alt=""><span class="uname" id="user-name"></span>
+      <button class="btn btn-outline" style="padding:0.3rem 0.6rem;font-size:0.65rem;" onclick="handleLogout()">Sair</button></div>
+  </header>
+  <div class="wrap">
+    <div class="alert warn">
+      <strong>⚠ Saque Aniversário FGTS</strong> — Ao aderir, você perde o direito ao saque integral do FGTS em caso de demissão sem justa causa. Avalie o risco antes de contratar novas antecipações.
+    </div>
+
+    <div class="sec-head">Cadastrar Contrato FGTS Antecipado</div>
+    <div class="form-block">
+      <div class="fgrid">
+        <div class="fg fgrid-w2"><label>Instituição financeira</label><input id="f-bank" type="text" placeholder="Caixa, Banco Pan, BMG, Itaú..."></div>
+        <div class="fg"><label>Valor recebido (R$)</label><input id="f-val" type="number" placeholder="3000"></div>
+        <div class="fg"><label>Saldo FGTS bloqueado (R$)</label><input id="f-fgts" type="number" placeholder="5000"></div>
+        <div class="fg"><label>Taxa ao ano (%)</label><input id="f-rate" type="number" placeholder="1.59" step="0.01"></div>
+        <div class="fg"><label>Ano início contrato</label><input id="f-year" type="number" placeholder="2023"></div>
+        <div class="fg"><label>Duração (anos)</label><input id="f-years" type="number" placeholder="5"></div>
+        <div class="fg fgrid-w2"><label>Observação</label><input id="f-obs" type="text" placeholder="Opcional"></div>
+      </div>
+      <button class="btn btn-dark" onclick="doAdd()">+ Adicionar contrato</button>
+    </div>
+
+    <div class="sec-head">Contratos Ativos <span class="pill" id="fgts-sum"></span></div>
+    <div id="fgts-list"><div class="empty">Nenhum contrato cadastrado.</div></div>
+
+    <div class="sec-head" style="margin-top:1.5rem;">Orientações</div>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:6px;padding:1.25rem;font-size:0.8rem;line-height:2;color:var(--muted);">
+      <p>✅ <strong>Taxa baixa (&lt;2%/ano):</strong> Pode valer a pena manter e usar o dinheiro para quitar dívidas mais caras.</p>
+      <p>✅ <strong>Dívidas com juros &gt;8%/mês:</strong> Priorize quitar primeiro — o custo do FGTS antecipado é mínimo em comparação.</p>
+      <p>❌ <strong>Risco de demissão:</strong> Sair da modalidade aniversário exige 25 meses de carência — planeje com antecedência.</p>
+      <p>❌ <strong>Evite novas antecipações</strong> se a renda já está muito comprometida.</p>
+    </div>
   </div>
-</body>
-</html>
+</div>
+<script type="module">
+  import { initAuth, state, fmt, esc, actionAddFGTS, actionDeleteFGTS, toast, handleLogout as _out } from '../js/app.js';
+  window.handleLogout = _out;
+  function render(){
+    const el=document.getElementById('fgts-list');
+    const total=state.fgts.reduce((s,f)=>s+f.fgts,0);
+    document.getElementById('fgts-sum').textContent=state.fgts.length+' contrato(s) · FGTS bloqueado: '+fmt(total);
+    if(!state.fgts.length){el.innerHTML='<div class="empty">Nenhum contrato cadastrado.</div>';return;}
+    el.innerHTML=state.fgts.map(f=>`
+      <div class="fgts-card">
+        <div><strong>${esc(f.bank)}</strong><br><span style="font-size:0.7rem;color:var(--muted);">Saque bloqueado até ~${(f.year||0)+(f.years||0)} · ${esc(f.obs||'')}</span></div>
+        <div><div style="font-size:0.65rem;color:var(--muted);">Valor recebido</div><div class="num">${fmt(f.val)}</div></div>
+        <div><div style="font-size:0.65rem;color:var(--muted);">FGTS bloqueado</div><div class="num">${fmt(f.fgts)}</div></div>
+        <div><div style="font-size:0.65rem;color:var(--muted);">Taxa/ano</div><div class="num">${f.rate}%</div></div>
+        <button class="ib" onclick="doDel('${f.id}')">✕</button>
+      </div>`).join('');
+  }
+  window.doAdd=async()=>{
+    const bank=document.getElementById('f-bank').value.trim();
+    if(!bank){toast('Informe a instituição.','warn');return;}
+    const data={bank,val:parseFloat(document.getElementById('f-val').value)||0,fgts:parseFloat(document.getElementById('f-fgts').value)||0,rate:parseFloat(document.getElementById('f-rate').value)||0,year:parseInt(document.getElementById('f-year').value)||new Date().getFullYear(),years:parseInt(document.getElementById('f-years').value)||5,obs:document.getElementById('f-obs').value.trim()};
+    try{await actionAddFGTS(data);['f-bank','f-val','f-fgts','f-rate','f-year','f-years','f-obs'].forEach(id=>document.getElementById(id).value='');toast('✅ Contrato adicionado!','ok');render();}catch(e){toast('Erro: '+e.message,'danger');}
+  };
+  window.doDel=async(id)=>{if(!confirm('Remover contrato?'))return;await actionDeleteFGTS(id);toast('Removido.','ok');render();};
+  initAuth(user=>{document.getElementById('loading-screen').style.display='none';document.getElementById('app-shell').style.display='block';document.getElementById('user-name').textContent=state.profile?.name||user.displayName||'';document.getElementById('user-photo').src=user.photoURL||'';render();},()=>{window.location.href='../index.html';});
+</script>
+</body></html>

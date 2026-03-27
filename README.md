@@ -5,6 +5,8 @@
 ```
 fincrtl/
 ├── index.html              ← Página principal (Visão Geral + Login)
+├── app.js                  ← Compat legado (reexporta /js/app.js)
+├── firebase.js             ← Compat legado (reexporta /js/firebase.js)
 ├── vercel.json             ← Configuração do Vercel
 ├── firestore.rules         ← Regras de segurança do Firebase
 ├── css/
@@ -18,8 +20,11 @@ fincrtl/
     ├── gastos.html         ← Gastos fixos mensais
     ├── fgts.html           ← Contratos FGTS antecipado
     ├── metas.html          ← Metas financeiras
-    └── plano.html          ← Plano de ação (Avalanche / Bola de Neve)
+    ├── plano.html          ← Plano de ação (Avalanche / Bola de Neve)
+    └── admin.html          ← Painel técnico (logs + estatísticas)
 ```
+
+> Observação: URLs legadas na raiz (`/dividas.html`, `/gastos.html`, etc.) redirecionam para `/pages/*`.
 
 ---
 
@@ -178,6 +183,7 @@ users/
 | FGTS antecipado (múltiplos contratos) | ✅ |
 | Metas financeiras com progresso | ✅ |
 | Plano Avalanche / Bola de Neve | ✅ |
+| Painel Admin técnico | ✅ |
 | Alertas automáticos de risco | ✅ |
 | Painel por dependente | ✅ |
 | Fluxo de caixa visual | ✅ |
