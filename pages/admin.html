@@ -26,7 +26,7 @@
   <div class="wrap">
     <div class="sec-head">Painel Administrativo</div>
     <div class="alert info" style="margin-bottom:1rem;">
-      Estatísticas calculadas com os dados da sua conta e logs gravados no Firestore em <code>users/{uid}/logs</code>.
+      Estatísticas calculadas com os dados da sua conta e logs gravados no Firestore em <code>users/{uid}/logs</code>. Esta aba agora fica disponível para qualquer usuário autenticado.
     </div>
 
     <div class="card-grid" id="admin-cards"></div>
@@ -162,7 +162,7 @@
 
   initAuth(async (user) => {
     if (!isAdminUser(user)) {
-      toast('Acesso admin permitido apenas para conta técnica autorizada.', 'danger');
+      toast('Sem permissão para acessar este painel.', 'danger');
       window.location.href = '../index.html';
       return;
     }
