@@ -21,7 +21,8 @@ fincrtl/
     ├── fgts.html           ← Contratos FGTS antecipado
     ├── metas.html          ← Metas financeiras
     ├── plano.html          ← Plano de ação (Avalanche / Bola de Neve)
-    └── admin.html          ← Painel técnico (logs + estatísticas)
+    ├── diagnostico.html    ← Diagnóstico da conta (logs + estatísticas do usuário)
+    └── admin.html          ← Painel técnico (restrito por e-mail)
 ```
 
 > Observação: URLs legadas na raiz (`/dividas.html`, `/gastos.html`, etc.) redirecionam para `/pages/*`.
@@ -183,7 +184,8 @@ users/
 | FGTS antecipado (múltiplos contratos) | ✅ |
 | Metas financeiras com progresso | ✅ |
 | Plano Avalanche / Bola de Neve | ✅ |
-| Painel Admin técnico | ✅ |
+| Diagnóstico da conta (usuário) | ✅ |
+| Painel Admin técnico (restrito) | ✅ |
 | Alertas automáticos de risco | ✅ |
 | Painel por dependente | ✅ |
 | Fluxo de caixa visual | ✅ |

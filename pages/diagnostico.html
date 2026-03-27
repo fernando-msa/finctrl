@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>FinCtrl — Admin Técnico</title>
+  <title>FinCtrl — Diagnóstico</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -17,20 +17,20 @@
       <a class="nav-tab" href="fgts.html">🏦 FGTS</a>
       <a class="nav-tab" href="metas.html">🎯 Metas</a>
       <a class="nav-tab" href="plano.html">🗺 Plano</a>
-      <a class="nav-tab" href="diagnostico.html">🧪 Diagnóstico</a>
-      <a class="nav-tab active" href="admin.html">🛠 Admin</a>
+      <a class="nav-tab active" href="diagnostico.html">🧪 Diagnóstico</a>
+      <a class="nav-tab admin-only" href="admin.html">🛠 Admin</a>
     </nav>
     <div class="user-chip"><img id="user-photo" src="" alt=""><span class="uname" id="user-name"></span>
       <button class="btn btn-outline" style="padding:0.3rem 0.6rem;font-size:0.65rem;" onclick="handleLogout()">Sair</button></div>
   </header>
 
   <div class="wrap">
-    <div class="sec-head">Painel Admin Técnico</div>
+    <div class="sec-head">Diagnóstico da Minha Conta</div>
     <div class="alert info" style="margin-bottom:1rem;">
-      Esta área técnica é restrita por e-mail autorizado (<code>ADMIN_EMAILS</code>) e usada para suporte/diagnóstico avançado.
+      Estatísticas calculadas com os seus dados e logs gravados no Firestore em <code>users/{uid}/logs</code>.
     </div>
 
-    <div class="card-grid" id="admin-cards"></div>
+    <div class="card-grid" id="diag-cards"></div>
 
     <div class="sec-head" style="margin-top:1.5rem;">Logs recentes</div>
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
@@ -64,7 +64,6 @@
     getFreeAmount,
     getCommitPct,
     loadRecentLogs,
-    isAdminUser,
     esc,
     toast,
     handleLogout as _out
@@ -107,7 +106,7 @@
       { label: 'Logs carregados', val: String(logs.length), sub: 'Últimos registros', cls: 'c-purple' }
     ];
 
-    document.getElementById('admin-cards').innerHTML = cards.map(c => `
+    document.getElementById('diag-cards').innerHTML = cards.map(c => `
       <div class="s-card ${c.cls}">
         <div class="s-label">${c.label}</div>
         <div class="s-val" style="font-size:1.2rem;word-break:break-word;">${c.val}</div>
@@ -162,12 +161,6 @@
   };
 
   initAuth(async (user) => {
-    if (!isAdminUser(user)) {
-      toast('Sem permissão para acessar este painel.', 'danger');
-      window.location.href = '../index.html';
-      return;
-    }
-
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'block';
     document.getElementById('user-name').textContent = state.profile?.name || user.displayName || '';
