@@ -1,143 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FinCtrl — Plano de Ação</title><link rel="stylesheet" href="../css/style.css"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinCtrl — Redirecionando...</title>
+  <meta http-equiv="refresh" content="0; url=/pages/plano.html">
+  <script>
+    window.location.replace('/pages/plano.html');
+  </script>
+</head>
 <body>
-<div id="loading-screen"><div class="spinner"></div></div>
-<div id="app-shell" style="display:none;">
-  <header id="app-header">
-    <a href="../index.html" class="logo">Fin<em>Ctrl</em></a>
-    <nav class="nav-tabs">
-      <a class="nav-tab" href="../index.html">📊 Visão Geral</a>
-      <a class="nav-tab" href="dividas.html">💳 Dívidas</a>
-      <a class="nav-tab" href="gastos.html">📋 Gastos</a>
-      <a class="nav-tab" href="fgts.html">🏦 FGTS</a>
-      <a class="nav-tab" href="metas.html">🎯 Metas</a>
-      <a class="nav-tab active" href="plano.html">🗺 Plano</a>
-    </nav>
-    <div class="user-chip"><img id="user-photo" src="" alt=""><span class="uname" id="user-name"></span>
-      <button class="btn btn-outline" style="padding:0.3rem 0.6rem;font-size:0.65rem;" onclick="handleLogout()">Sair</button></div>
-  </header>
-  <div class="wrap">
-
-    <div style="display:flex;gap:0.5rem;margin:1rem 0;flex-wrap:wrap;">
-      <button class="btn btn-dark" id="m-av" onclick="setMethod('avalanche')">🔥 Avalanche — juros altos primeiro</button>
-      <button class="btn btn-outline" id="m-sn" onclick="setMethod('snowball')">⛄ Bola de Neve — menores primeiro</button>
-    </div>
-    <div id="method-box" class="alert info" style="margin-bottom:1.5rem;"></div>
-
-    <div class="sec-head">Ordem de Quitação</div>
-    <div id="plan-list"></div>
-
-    <div class="sec-head" style="margin-top:1.5rem;">Progresso Geral</div>
-    <div id="progress-box"></div>
-
-    <div class="sec-head" style="margin-top:1.5rem;">Cronograma por Fase</div>
-    <div id="phases-box"></div>
-
-    <div class="sec-head" style="margin-top:1.5rem;">Dicas Estratégicas</div>
-    <div id="tips-box"></div>
-
-  </div>
-</div>
-<script type="module">
-  import { initAuth, state, fmt, pct, income, emergency, getActiveDebts, getTotalDebt,
-           getTotalMonthly, getTotalExp, getFreeAmount, getSortedDebts, toast, handleLogout as _out } from '../js/app.js';
-  window.handleLogout = _out;
-
-  let method = 'avalanche';
-
-  window.setMethod = (m) => {
-    method = m;
-    state.method = m;
-    document.getElementById('m-av').className = 'btn ' + (m==='avalanche'?'btn-dark':'btn-outline');
-    document.getElementById('m-sn').className = 'btn ' + (m==='snowball'?'btn-dark':'btn-outline');
-    render();
-  };
-
-  function render() {
-    const me = document.getElementById('method-box');
-    me.innerHTML = method === 'avalanche'
-      ? '🔥 <strong>Avalanche</strong> — Pague o mínimo em todas e coloque qualquer sobra na dívida com <strong>maior juros</strong>. Economiza mais dinheiro no longo prazo.'
-      : '⛄ <strong>Bola de Neve</strong> — Pague o mínimo em todas e coloque qualquer sobra na dívida com <strong>menor saldo</strong>. Gera motivação com quitações rápidas.';
-
-    const inc    = income();
-    const emg    = emergency();
-    const te     = getTotalExp();
-    const tm     = getTotalMonthly();
-    const extra  = Math.max(getFreeAmount(), 0);
-    const ordered = getSortedDebts();
-
-    // Plan list
-    const pl = document.getElementById('plan-list');
-    if (!ordered.length) {
-      pl.innerHTML = '<div class="alert ok"><strong>🎉 Parabéns!</strong> Nenhuma dívida ativa no momento!</div>';
-    } else {
-      pl.innerHTML = ordered.map((d,i) => {
-        const isFirst = i === 0;
-        const ef = d.monthly + (isFirst ? extra : 0);
-        const months = ef > 0 ? Math.ceil(d.total / ef) : '?';
-        const urgNote = d.status === 'atrasada' ? ' <span class="tag tag-red">URGENTE</span>' : '';
-        const fineNote = d.status === 'atrasada' && d.delay ? ` · multa estimada: <span class="hi">${fmt(d.total*0.02*d.delay)}</span>` : '';
-        const extraNote = isFirst && extra > 0
-          ? `<br>→ Coloque <strong class="go">${fmt(extra)}/mês de sobra</strong> aqui além da parcela mínima.` : '';
-        return `<div class="plan-item">
-          <div class="plan-num">0${i+1}</div>
-          <div class="plan-body">
-            <h3>${d.name}${urgNote}</h3>
-            <p>Saldo: <strong>${fmt(d.total)}</strong>${fineNote} · Parcela mínima: ${fmt(d.monthly)} · Juros: ${d.rate||'—'}%/mês
-            ${extraNote}
-            <br>Previsão de quitação: <span class="go">~${months} meses</span></p>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    // Progress
-    const total     = state.debts.reduce((s,d)=>s+d.total,0);
-    const paidTotal = state.debts.filter(d=>d.paid).reduce((s,d)=>s+d.total,0);
-    const p = pct(paidTotal, total);
-    document.getElementById('progress-box').innerHTML = `
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">${p}% quitado — ${fmt(paidTotal)} de ${fmt(total)}</div>
-      <div class="prog-bar" style="height:14px;"><div class="prog-fill" style="width:${p}%;"></div></div>`;
-
-    // Phases
-    let cumMonths = 0;
-    const phases = ordered.map((d,i) => {
-      const ef = d.monthly + (i===0 ? extra : 0);
-      const m = ef > 0 ? Math.ceil(d.total/ef) : 0;
-      cumMonths += m;
-      return `<div class="plan-item" style="padding:0.75rem 1rem;">
-        <div class="plan-num" style="font-size:1.4rem;min-width:36px;">F${i+1}</div>
-        <div class="plan-body">
-          <h3>${d.name} — <span class="go">~${m} meses</span></h3>
-          <p>Acumulado: <strong>~${cumMonths} meses</strong> do início · Libera ${fmt(d.monthly)}/mês após quitação.</p>
-        </div>
-      </div>`;
-    }).join('');
-    document.getElementById('phases-box').innerHTML = phases || '<div class="empty">Cadastre dívidas para ver o cronograma.</div>';
-
-    // Tips
-    const tips = [];
-    const highRate = ordered.filter(d=>d.rate>=8);
-    if (highRate.length) tips.push(`⚡ <strong>Refinancie urgente:</strong> ${highRate.map(d=>d.name+'('+d.rate+'%/mês)').join(', ')}. Tente portabilidade de crédito para banco público ou fintech com taxa menor.`);
-    if (extra > 0) tips.push(`💰 Você tem <strong>${fmt(extra)}/mês de sobra</strong>. Cada real extra na dívida prioritária reduz significativamente o prazo total.`);
-    if (state.fgts.length > 1) tips.push(`🏦 <strong>${state.fgts.length} contratos FGTS antecipados.</strong> Avalie o custo total x benefício — se as taxas forem baixas, use o capital para quitar dívidas caras.`);
-    tips.push(`🤝 <strong>Negociação:</strong> Dívidas com 2-3 meses de atraso ainda têm boa margem de desconto (40-60%). Acesse o Serasa Limpa Nome ou negocie diretamente antes de completar 90 dias.`);
-    tips.push(`📅 <strong>Estratégia em 4 fases:</strong> 1) Regularize atrasadas → 2) Elimine juros altos → 3) Amortize empréstimos → 4) Construa reserva e metas.`);
-    if (state.goals.length) {
-      const top = state.goals.filter(g=>g.prio==='alta')[0];
-      if (top) tips.push(`🎯 <strong>Meta prioritária:</strong> "${top.name}" — R$ ${fmt(top.target)}. Ao quitar a 1ª dívida, redirecione a parcela liberada para essa meta.`);
-    }
-    document.getElementById('tips-box').innerHTML = tips.map(t=>`<div class="plan-item"><div class="plan-body"><p>${t}</p></div></div>`).join('');
-  }
-
-  initAuth(user=>{
-    document.getElementById('loading-screen').style.display='none';
-    document.getElementById('app-shell').style.display='block';
-    document.getElementById('user-name').textContent=state.profile?.name||user.displayName||'';
-    document.getElementById('user-photo').src=user.photoURL||'';
-    render();
-  }, ()=>{ window.location.href='../index.html'; });
-</script>
-</body></html>
+  <p>Redirecionando para <a href="/pages/plano.html">/pages/plano.html</a>...</p>
+</body>
+</html>
