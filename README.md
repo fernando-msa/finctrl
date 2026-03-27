@@ -60,18 +60,36 @@ fincrtl/
 
 ## PASSO 2 — Configurar js/firebase.js
 
-Abra o arquivo `js/firebase.js` e substitua os valores:
+O projeto já está com as credenciais carregadas em `js/firebase.js`:
 
 ```javascript
 const firebaseConfig = {
-  apiKey:            "AIzaSy...",          // ← cole aqui
-  authDomain:        "fincrtl.firebaseapp.com",
-  projectId:         "fincrtl-prod",
-  storageBucket:     "fincrtl-prod.appspot.com",
-  messagingSenderId: "123456789",
-  appId:             "1:123456789:web:abc123"
+  apiKey: "AIzaSyDnqqfvrAJdEJFzDNjt4gohg6h63unL8g4",
+  authDomain: "fincrtl-3e976.firebaseapp.com",
+  projectId: "fincrtl-3e976",
+  storageBucket: "fincrtl-3e976.firebasestorage.app",
+  messagingSenderId: "1052094135775",
+  appId: "1:1052094135775:web:d25f0dd40c5d992437186a",
+  measurementId: "G-BLK1Q2494Z",
+  databaseURL: "https://fincrtl-3e976-default-rtdb.firebaseio.com"
 };
 ```
+
+### Firebase Admin (backend)
+
+Também foi adicionado o arquivo `firebase-admin-init.example.cjs` com o bootstrap do Admin SDK para uso em backend Node.js.
+
+> Importante: o Admin SDK **não deve** rodar no navegador.
+> O arquivo `serviceAccountKey.json` precisa ficar fora do Git (ex: `./secrets/serviceAccountKey.json`).
+
+### Banco de logs (para diagnóstico)
+
+O app agora grava logs automaticamente no Firestore em:
+
+- `logs/{autoId}` (visão geral do sistema)
+- `users/{uid}/logs/{autoId}` (logs por usuário)
+
+Campos gravados: `level`, `message`, `payload`, `uid`, `email`, `createdAt`, `userAgent`.
 
 ---
 

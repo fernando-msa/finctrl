@@ -7,11 +7,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Logs globais de diagnóstico (somente dono do log)
+    match /logs/{logId} {
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid;
+      allow read: if request.auth != null
+                  && resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // Cada usuário só acessa seus próprios dados
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      // Subcoleções: debts, expenses, fgts, goals
+      // Subcoleções: debts, expenses, fgts, goals, logs
       match /{collection}/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
