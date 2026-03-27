@@ -1,16 +1,82 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FinCtrl — Metas</title>
-  <link rel="stylesheet" href="../css/style.css" />
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FinCtrl — Metas</title><link rel="stylesheet" href="../css/style.css"></head>
 <body>
-  <div class="wrap" style="padding-top:2rem;">
-    <a class="btn btn-outline" href="../index.html">← Voltar</a>
-    <h1 style="margin-top:1rem;">Página em construção</h1>
-    <p style="color:var(--muted)">Esta seção será publicada nas próximas etapas da configuração.</p>
+<div id="loading-screen"><div class="spinner"></div></div>
+<div id="app-shell" style="display:none;">
+  <header id="app-header">
+    <a href="../index.html" class="logo">Fin<em>Ctrl</em></a>
+    <nav class="nav-tabs">
+      <a class="nav-tab" href="../index.html">📊 Visão Geral</a>
+      <a class="nav-tab" href="dividas.html">💳 Dívidas</a>
+      <a class="nav-tab" href="gastos.html">📋 Gastos</a>
+      <a class="nav-tab" href="fgts.html">🏦 FGTS</a>
+      <a class="nav-tab active" href="metas.html">🎯 Metas</a>
+      <a class="nav-tab" href="plano.html">🗺 Plano</a>
+      <a class="nav-tab admin-only" href="admin.html">🛠 Admin</a>
+    </nav>
+    <div class="user-chip"><img id="user-photo" src="" alt=""><span class="uname" id="user-name"></span>
+      <button class="btn btn-outline" style="padding:0.3rem 0.6rem;font-size:0.65rem;" onclick="handleLogout()">Sair</button></div>
+  </header>
+  <div class="wrap">
+    <div class="sec-head">Nova Meta Financeira</div>
+    <div class="form-block">
+      <div class="fgrid">
+        <div class="fg fgrid-w2"><label>Nome da meta</label><input id="m-name" type="text" placeholder="Ex: Reserva de emergência, Viagem, Carro"></div>
+        <div class="fg"><label>Ícone</label><select id="m-icon"><option>🎯</option><option>💰</option><option>🏠</option><option>✈️</option><option>🚗</option><option>📚</option><option>🏥</option><option>👶</option><option>💍</option><option>🛡️</option><option>🏖️</option><option>💻</option></select></div>
+        <div class="fg"><label>Valor alvo (R$)</label><input id="m-target" type="number" placeholder="10000"></div>
+        <div class="fg"><label>Já guardado (R$)</label><input id="m-saved" type="number" placeholder="0"></div>
+        <div class="fg"><label>Guardar / mês (R$)</label><input id="m-monthly" type="number" placeholder="500"></div>
+        <div class="fg"><label>Prioridade</label><select id="m-prio">
+          <option value="alta">🔴 Alta</option><option value="media">🟡 Média</option><option value="baixa">🟢 Baixa</option>
+        </select></div>
+        <div class="fg fgrid-w2"><label>Descrição (opcional)</label><input id="m-desc" type="text" placeholder="Detalhes da meta"></div>
+      </div>
+      <button class="btn btn-dark" onclick="doAdd()">+ Adicionar meta</button>
+    </div>
+
+    <div class="sec-head">Suas Metas</div>
+    <div id="goals-list"><div class="empty"><div class="empty-icon">🎯</div>Nenhuma meta cadastrada ainda.</div></div>
   </div>
-</body>
-</html>
+</div>
+<script type="module">
+  import { initAuth, state, fmt, pct, actionAddGoal, actionDeleteGoal, toast, handleLogout as _out } from '../js/app.js';
+  window.handleLogout = _out;
+  const prioColor = { alta:'var(--red)', media:'var(--yellow)', baixa:'var(--green)' };
+  function render(){
+    const el=document.getElementById('goals-list');
+    if(!state.goals.length){el.innerHTML='<div class="empty"><div class="empty-icon">🎯</div>Nenhuma meta cadastrada ainda.</div>';return;}
+    const sorted=[...state.goals].sort((a,b)=>{const r={alta:0,media:1,baixa:2};return r[a.prio]-r[b.prio];});
+    el.innerHTML=sorted.map(g=>{
+      const p=pct(g.saved||0,g.target||1);
+      const rem=(g.target||0)-(g.saved||0);
+      const months=g.monthly>0?Math.ceil(rem/g.monthly):'?';
+      return `<div class="goal-card" style="border-left:4px solid ${prioColor[g.prio]||'var(--border)'};">
+        <div class="goal-icon">${g.icon||'🎯'}</div>
+        <div class="goal-body" style="flex:1;">
+          <h4>${g.name}</h4>
+          <p>${g.desc||''}</p>
+          <div style="display:flex;gap:1.5rem;margin-top:0.5rem;font-size:0.75rem;flex-wrap:wrap;">
+            <span>Alvo: <strong>${fmt(g.target)}</strong></span>
+            <span>Guardado: <strong>${fmt(g.saved||0)}</strong></span>
+            <span>Falta: <strong>${fmt(rem)}</strong></span>
+            ${g.monthly?`<span>Previsão: <strong>~${months} meses</strong></span>`:''}
+          </div>
+          <div class="prog-bar" style="margin-top:0.6rem;height:10px;"><div class="prog-fill" style="width:${p}%;background:${prioColor[g.prio]||'var(--green)'};"></div></div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-top:0.25rem;">${p}% concluído</div>
+        </div>
+        <button class="ib" onclick="doDel('${g.id}')" style="align-self:flex-start;">✕</button>
+      </div>`;
+    }).join('');
+  }
+  window.doAdd=async()=>{
+    const name=document.getElementById('m-name').value.trim();
+    if(!name){toast('Informe o nome da meta.','warn');return;}
+    const data={name,icon:document.getElementById('m-icon').value,target:parseFloat(document.getElementById('m-target').value)||0,saved:parseFloat(document.getElementById('m-saved').value)||0,monthly:parseFloat(document.getElementById('m-monthly').value)||0,prio:document.getElementById('m-prio').value,desc:document.getElementById('m-desc').value.trim()};
+    try{await actionAddGoal(data);['m-name','m-target','m-saved','m-monthly','m-desc'].forEach(id=>document.getElementById(id).value='');toast('✅ Meta adicionada!','ok');render();}catch(e){toast('Erro: '+e.message,'danger');}
+  };
+  window.doDel=async(id)=>{if(!confirm('Remover meta?'))return;await actionDeleteGoal(id);toast('Removido.','ok');render();};
+  initAuth(user=>{document.getElementById('loading-screen').style.display='none';document.getElementById('app-shell').style.display='block';document.getElementById('user-name').textContent=state.profile?.name||user.displayName||'';document.getElementById('user-photo').src=user.photoURL||'';render();},()=>{window.location.href='../index.html';});
+</script>
+</body></html>

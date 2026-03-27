@@ -19,7 +19,12 @@ import {
   getDocs,
   setDoc,
   serverTimestamp,
-  addDoc
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy,
+  limit
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 export const state = {
@@ -33,8 +38,11 @@ export const state = {
   debts: [],
   expenses: [],
   fgts: [],
-  goals: []
+  goals: [],
+  method: 'avalanche'
 };
+
+const ADMIN_EMAILS = ['ribeirojunior270@gmail.com'];
 
 export const fmt = (v = 0) =>
   Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -47,6 +55,7 @@ export const pct = (a = 0, b = 1) => {
 
 const uidPath = () => doc(db, 'users', state.user.uid);
 const collPath = (name) => collection(db, 'users', state.user.uid, name);
+const itemPath = (name, id) => doc(db, 'users', state.user.uid, name, id);
 
 async function logEvent(level, message, payload = {}) {
   try {
@@ -74,6 +83,26 @@ async function logEvent(level, message, payload = {}) {
 async function loadCollection(name) {
   const snap = await getDocs(collPath(name));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function loadRecentLogs(max = 60) {
+  if (!state.user?.uid) throw new Error('Usuário não autenticado.');
+  const logsRef = collection(db, 'users', state.user.uid, 'logs');
+  const q = query(logsRef, orderBy('createdAt', 'desc'), limit(max));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export function isAdminUser(user = state.user) {
+  const email = (user?.email || '').trim().toLowerCase();
+  return ADMIN_EMAILS.includes(email);
+}
+
+function applyAdminNavVisibility() {
+  const isAdmin = isAdminUser();
+  document.querySelectorAll('.admin-only').forEach((link) => {
+    link.style.display = isAdmin ? '' : 'none';
+  });
 }
 
 async function loadUserData(user) {
@@ -138,6 +167,17 @@ export async function actionSaveProfile(partial = {}) {
   });
 }
 
+export const CAT_LABELS = {
+  moradia: '🏠 Moradia',
+  educacao_filho: '🎒 Ed. Filho',
+  educacao_propria: '🎓 Ed. Própria',
+  saude: '🏥 Saúde',
+  transporte: '🚗 Transporte',
+  alimentacao: '🛒 Alimentação',
+  utilidades: '💡 Utilidades',
+  outro: '📋 Outro'
+};
+
 export const income = () => Number(state.profile?.income || 0);
 export const emergency = () => Number(state.profile?.emergency || 0);
 export const getActiveDebts = () => state.debts.filter((d) => !d.paid);
@@ -146,6 +186,15 @@ export const getTotalMonthly = () => getActiveDebts().reduce((s, d) => s + Numbe
 export const getTotalExp = () => state.expenses.reduce((s, e) => s + Number(e.val || 0), 0);
 export const getFreeAmount = () => income() - getTotalMonthly() - getTotalExp() - emergency();
 export const getCommitPct = () => pct(getTotalMonthly() + getTotalExp(), income());
+export const getSortedDebts = () => {
+  const active = getActiveDebts();
+  const atrasadas = active.filter((d) => d.status === 'atrasada');
+  const normal = active.filter((d) => d.status !== 'atrasada');
+  const sortedNormal = (state.method || 'avalanche') === 'snowball'
+    ? normal.sort((a, b) => Number(a.total || 0) - Number(b.total || 0))
+    : normal.sort((a, b) => Number(b.rate || 0) - Number(a.rate || 0));
+  return [...atrasadas, ...sortedNormal];
+};
 
 export function getPeopleMap() {
   return state.expenses.reduce((acc, item) => {
@@ -175,6 +224,62 @@ export function toast(message, type = 'ok') {
   setTimeout(() => el.remove(), 2600);
 }
 
+export async function actionAddDebt(data = {}) {
+  const payload = {
+    ...data,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  const ref = await addDoc(collPath('debts'), payload);
+  state.debts.push({ id: ref.id, ...data });
+}
+
+export async function actionDeleteDebt(id) {
+  await deleteDoc(itemPath('debts', id));
+  state.debts = state.debts.filter((d) => d.id !== id);
+}
+
+export async function actionTogglePaid(id) {
+  const debt = state.debts.find((d) => d.id === id);
+  if (!debt) return;
+  const paid = !Boolean(debt.paid);
+  await updateDoc(itemPath('debts', id), { paid, updatedAt: serverTimestamp() });
+  debt.paid = paid;
+}
+
+export async function actionAddExpense(data = {}) {
+  const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+  const ref = await addDoc(collPath('expenses'), payload);
+  state.expenses.push({ id: ref.id, ...data });
+}
+
+export async function actionDeleteExpense(id) {
+  await deleteDoc(itemPath('expenses', id));
+  state.expenses = state.expenses.filter((e) => e.id !== id);
+}
+
+export async function actionAddFGTS(data = {}) {
+  const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+  const ref = await addDoc(collPath('fgts'), payload);
+  state.fgts.push({ id: ref.id, ...data });
+}
+
+export async function actionDeleteFGTS(id) {
+  await deleteDoc(itemPath('fgts', id));
+  state.fgts = state.fgts.filter((f) => f.id !== id);
+}
+
+export async function actionAddGoal(data = {}) {
+  const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+  const ref = await addDoc(collPath('goals'), payload);
+  state.goals.push({ id: ref.id, ...data });
+}
+
+export async function actionDeleteGoal(id) {
+  await deleteDoc(itemPath('goals', id));
+  state.goals = state.goals.filter((g) => g.id !== id);
+}
+
 export async function handleLogin() {
   try {
     await signInWithPopup(auth, googleProvider);
@@ -197,12 +302,14 @@ export function initAuth(onIn, onOut) {
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       state.user = null;
+      applyAdminNavVisibility();
       onOut?.();
       return;
     }
 
     try {
       await loadUserData(user);
+      applyAdminNavVisibility();
       await logEvent('info', 'Usuário autenticado', { email: user.email || null });
       onIn?.(user);
     } catch (err) {
