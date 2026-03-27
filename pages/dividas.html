@@ -1,16 +1,147 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FinCtrl — Dividas</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinCtrl — Dívidas</title>
+  <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-  <div class="wrap" style="padding-top:2rem;">
-    <a class="btn btn-outline" href="../index.html">← Voltar</a>
-    <h1 style="margin-top:1rem;">Página em construção</h1>
-    <p style="color:var(--muted)">Esta seção será publicada nas próximas etapas da configuração.</p>
+<div id="loading-screen"><div class="spinner"></div></div>
+
+<div id="app-shell" style="display:none;">
+  <header id="app-header">
+    <a href="../index.html" class="logo">Fin<em>Ctrl</em></a>
+    <nav class="nav-tabs">
+      <a class="nav-tab" href="../index.html">📊 Visão Geral</a>
+      <a class="nav-tab active" href="dividas.html">💳 Dívidas</a>
+      <a class="nav-tab" href="gastos.html">📋 Gastos</a>
+      <a class="nav-tab" href="fgts.html">🏦 FGTS</a>
+      <a class="nav-tab" href="metas.html">🎯 Metas</a>
+      <a class="nav-tab" href="plano.html">🗺 Plano</a>
+      <a class="nav-tab admin-only" href="admin.html">🛠 Admin</a>
+    </nav>
+    <div class="user-chip">
+      <img id="user-photo" src="" alt="">
+      <span class="uname" id="user-name"></span>
+      <button class="btn btn-outline" style="padding:0.3rem 0.6rem;font-size:0.65rem;" onclick="handleLogout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="sec-head">Cadastrar Dívida / Empréstimo</div>
+    <div class="form-block">
+      <div class="fgrid">
+        <div class="fg fgrid-w2"><label>Credor / Nome</label><input id="d-name" type="text" placeholder="Ex: Banco Pan, Nubank, Americanas"></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="d-type">
+            <option>Empréstimo pessoal</option><option>Consignado</option>
+            <option>Cartão de crédito</option><option>Cheque especial</option>
+            <option>Financiamento</option><option>Conta em atraso</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="fg"><label>Total (R$)</label><input id="d-total" type="number" placeholder="5000"></div>
+        <div class="fg"><label>Parcela / mês (R$)</label><input id="d-monthly" type="number" placeholder="500"></div>
+        <div class="fg"><label>Juros / mês (%)</label><input id="d-rate" type="number" placeholder="3.5" step="0.1"></div>
+        <div class="fg"><label>Parcelas restantes</label><input id="d-parcels" type="number" placeholder="12"></div>
+        <div class="fg"><label>Status</label>
+          <select id="d-status">
+            <option value="em_dia">Em dia</option>
+            <option value="atrasada">Atrasada</option>
+            <option value="negociando">Negociando</option>
+          </select>
+        </div>
+        <div class="fg"><label>Meses em atraso</label><input id="d-delay" type="number" placeholder="0" value="0"></div>
+        <div class="fg fgrid-w2"><label>Observação</label><input id="d-obs" type="text" placeholder="Opcional: banco, contrato, etc."></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-dark" onclick="doAddDebt()">+ Adicionar dívida</button>
+      </div>
+    </div>
+
+    <div class="sec-head">Suas Dívidas <span class="pill" id="debt-count">0</span></div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th>Credor</th><th>Tipo</th><th>Total</th><th>Parcela/mês</th>
+        <th>Juros/mês</th><th>Parc.</th><th>Status</th><th>Alerta</th><th>Obs.</th><th></th>
+      </tr></thead>
+      <tbody id="debt-tbody"></tbody></table>
+    </div>
   </div>
+</div>
+
+<script type="module">
+  import { initAuth, state, fmt, esc, actionAddDebt, actionDeleteDebt, actionTogglePaid, toast, handleLogout as _out } from '../js/app.js';
+  window.handleLogout = _out;
+
+  function render() {
+    const tbody = document.getElementById('debt-tbody');
+    const sorted = [...state.debts].sort((a,b)=>{
+      if(a.status==='atrasada'&&b.status!=='atrasada') return -1;
+      if(b.status==='atrasada'&&a.status!=='atrasada') return 1;
+      return b.rate-a.rate;
+    });
+    document.getElementById('debt-count').textContent = state.debts.filter(d=>!d.paid).length + ' ativa(s)';
+    if(!sorted.length){tbody.innerHTML='<tr><td colspan="10" class="empty">Nenhuma dívida cadastrada.</td></tr>';return;}
+    const stMap = {em_dia:['tag-green','Em dia'],atrasada:['tag-red','Atrasada'],negociando:['tag-yellow','Negociando']};
+    tbody.innerHTML = sorted.map(d=>{
+      const [stCls,stLbl] = stMap[d.status]||['tag-gray',d.status];
+      const fine = d.status==='atrasada' && d.delay ? `· multa ~${fmt(d.total*0.02*d.delay)}` : '';
+      const alertHtml = d.status==='atrasada'
+        ? `<span class="tag tag-red">⚠ ${d.delay||0}m atraso ${fine}</span>`
+        : d.rate>=8 ? `<span class="tag tag-orange">Juros altos</span>` : `<span class="tag tag-green">OK</span>`;
+      return `<tr class="${d.paid?'row-paid':''} ${d.status==='atrasada'?'row-alert':''}">
+        <td><strong>${esc(d.name)}</strong></td>
+        <td>${esc(d.type)}</td>
+        <td class="r num">${fmt(d.total)}</td>
+        <td class="r num">${fmt(d.monthly)}</td>
+        <td class="r">${d.rate?d.rate+'%':'—'}</td>
+        <td class="r">${d.parcels||'—'}</td>
+        <td><span class="tag ${stCls}">${esc(stLbl)}</span></td>
+        <td>${alertHtml}</td>
+        <td style="color:var(--muted);font-size:0.72rem;">${esc(d.obs||'—')}</td>
+        <td><div style="display:flex;gap:4px;">
+          <button class="ib ok" title="${d.paid?'Reabrir':'Marcar quitado'}" onclick="doToggle('${d.id}')">${d.paid?'↩':'✓'}</button>
+          <button class="ib" onclick="doDelete('${d.id}')">✕</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.doAddDebt = async () => {
+    const name = document.getElementById('d-name').value.trim();
+    if(!name){toast('Informe o credor.','warn');return;}
+    const data = {
+      name, paid:false,
+      type:    document.getElementById('d-type').value,
+      total:   parseFloat(document.getElementById('d-total').value)||0,
+      monthly: parseFloat(document.getElementById('d-monthly').value)||0,
+      rate:    parseFloat(document.getElementById('d-rate').value)||0,
+      parcels: parseInt(document.getElementById('d-parcels').value)||0,
+      status:  document.getElementById('d-status').value,
+      delay:   parseInt(document.getElementById('d-delay').value)||0,
+      obs:     document.getElementById('d-obs').value.trim(),
+    };
+    try {
+      await actionAddDebt(data);
+      ['d-name','d-total','d-monthly','d-rate','d-parcels','d-delay','d-obs'].forEach(id=>document.getElementById(id).value='');
+      toast('✅ Dívida adicionada!','ok'); render();
+    } catch(e) { toast('Erro: '+e.message,'danger'); }
+  };
+  window.doDelete = async (id) => {
+    if(!confirm('Remover essa dívida?')) return;
+    await actionDeleteDebt(id); toast('Removido.','ok'); render();
+  };
+  window.doToggle = async (id) => {
+    await actionTogglePaid(id); render();
+  };
+
+  initAuth(user=>{
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('app-shell').style.display='block';
+    document.getElementById('user-name').textContent = state.profile?.name||user.displayName||'';
+    document.getElementById('user-photo').src = user.photoURL||'';
+    render();
+  }, ()=>{ window.location.href='../index.html'; });
+</script>
 </body>
 </html>

@@ -64,6 +64,7 @@
       <a class="nav-tab" href="pages/fgts.html">🏦 FGTS</a>
       <a class="nav-tab" href="pages/metas.html">🎯 Metas</a>
       <a class="nav-tab" href="pages/plano.html">🗺 Plano</a>
+      <a class="nav-tab admin-only" href="pages/admin.html">🛠 Admin</a>
     </nav>
     <div class="user-chip">
       <img id="user-photo" src="" alt="" onerror="this.style.display='none'">
@@ -110,7 +111,7 @@
 </div>
 
 <script type="module">
-  import { initAuth, state, fmt, pct, actionSaveProfile,
+  import { initAuth, state, fmt, pct, esc, actionSaveProfile,
            income, emergency, getActiveDebts, getTotalDebt,
            getTotalMonthly, getTotalExp, getFreeAmount, getCommitPct,
            getPeopleMap, toast, handleLogin as _login, handleLogout as _logout
@@ -165,12 +166,12 @@
 
     // Alerts
     let alerts = [], ac = 0;
-    if (atrasadas.length) { ac++; alerts.push(`<div class="alert danger"><strong>🚨 ${atrasadas.length} dívida(s) em atraso!</strong> Prioridade máxima: ${atrasadas.map(d=>d.name).join(', ')}.</div>`); }
+    if (atrasadas.length) { ac++; alerts.push(`<div class="alert danger"><strong>🚨 ${atrasadas.length} dívida(s) em atraso!</strong> Prioridade máxima: ${atrasadas.map(d=>esc(d.name)).join(', ')}.</div>`); }
     if (free < 0)         { ac++; alerts.push(`<div class="alert danger"><strong>🔴 Caixa negativo: ${fmt(Math.abs(free))}/mês</strong> — renegociação urgente necessária.</div>`); }
     else if (free < 300)  { ac++; alerts.push(`<div class="alert warn"><strong>⚠ Margem apertada: ${fmt(free)}/mês</strong> — qualquer imprevisto compromete os pagamentos.</div>`); }
     if (cp > 50)          { ac++; alerts.push(`<div class="alert danger"><strong>🚨 ${cp}% da renda comprometida</strong> — acima da zona crítica (50%).</div>`); }
     const hr = getActiveDebts().filter(d=>d.rate>=8);
-    if (hr.length)        { ac++; alerts.push(`<div class="alert warn"><strong>⚡ ${hr.length} dívida(s) com juros ≥ 8%/mês</strong>: ${hr.map(d=>d.name+'('+d.rate+'%)').join(', ')}.</div>`); }
+    if (hr.length)        { ac++; alerts.push(`<div class="alert warn"><strong>⚡ ${hr.length} dívida(s) com juros ≥ 8%/mês</strong>: ${hr.map(d=>esc(d.name)+'('+d.rate+'%)').join(', ')}.</div>`); }
     if (!alerts.length)   alerts.push(`<div class="alert ok"><strong>✅ Situação sob controle.</strong> Continue seguindo o plano!</div>`);
     document.getElementById('alerts-box').innerHTML = alerts.join('');
     document.getElementById('alert-pill').textContent = ac + (ac===1?' alerta':' alertas');
@@ -201,8 +202,8 @@
     pb.innerHTML = Object.entries(map).map(([name,items])=>{
       const t = items.reduce((s,i)=>s+i.val,0);
       return `<div class="person-card">
-        <div class="person-name">👤 ${name}</div>
-        ${items.length ? items.map(i=>`<div class="person-item"><span>${i.name}</span><span class="num">${fmt(i.val)}</span></div>`).join('') : '<div class="person-item" style="color:var(--muted)">Nenhum gasto vinculado</div>'}
+        <div class="person-name">👤 ${esc(name)}</div>
+        ${items.length ? items.map(i=>`<div class="person-item"><span>${esc(i.name)}</span><span class="num">${fmt(i.val)}</span></div>`).join('') : '<div class="person-item" style="color:var(--muted)">Nenhum gasto vinculado</div>'}
         ${items.length ? `<div style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;margin-top:0.5rem;color:var(--red);">Total: ${fmt(t)}/mês</div>` : ''}
       </div>`;
     }).join('');
