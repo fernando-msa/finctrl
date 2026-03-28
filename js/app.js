@@ -8,6 +8,9 @@ import {
 
 import {
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithPopup,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -443,6 +446,40 @@ export async function handleLogin() {
   } catch (err) {
     toast('Erro no login. Tente novamente.', 'err');
     await logEvent('error', 'Falha no login', { code: err?.code, message: err?.message });
+  }
+}
+
+export async function handleEmailLogin(email = '', password = '') {
+  const cleanEmail = normText(email, 120).toLowerCase();
+  if (!cleanEmail || !password) throw new Error('Informe e-mail e senha.');
+  try {
+    await signInWithEmailAndPassword(auth, cleanEmail, password);
+  } catch (err) {
+    await logEvent('error', 'Falha no login por e-mail', { code: err?.code, message: err?.message });
+    throw new Error('Não foi possível entrar com e-mail e senha. Verifique os dados.');
+  }
+}
+
+export async function handleEmailRegister(email = '', password = '') {
+  const cleanEmail = normText(email, 120).toLowerCase();
+  if (!cleanEmail || !password) throw new Error('Informe e-mail e senha.');
+  if (String(password).length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
+  try {
+    await createUserWithEmailAndPassword(auth, cleanEmail, password);
+  } catch (err) {
+    await logEvent('error', 'Falha no cadastro por e-mail', { code: err?.code, message: err?.message });
+    throw new Error('Não foi possível cadastrar com e-mail e senha.');
+  }
+}
+
+export async function handlePasswordReset(email = '') {
+  const cleanEmail = normText(email, 120).toLowerCase();
+  if (!cleanEmail) throw new Error('Informe o e-mail para recuperação.');
+  try {
+    await sendPasswordResetEmail(auth, cleanEmail);
+  } catch (err) {
+    await logEvent('error', 'Falha no reset de senha', { code: err?.code, message: err?.message });
+    throw new Error('Não foi possível enviar e-mail de recuperação.');
   }
 }
 
