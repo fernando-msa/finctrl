@@ -45,8 +45,8 @@ export const state = {
   method: 'avalanche'
 };
 
-const ADMIN_EMAILS = ['ribeirojunior270@gmail.com'];
-const ADMIN_ACCESS_MODE = 'all-authenticated'; // 'allowlist' | 'all-authenticated'
+const ADMIN_EMAILS = []; // Ex: ['admin@seudominio.com']
+const ADMIN_ACCESS_MODE = 'allowlist'; // 'allowlist' | 'all-authenticated'
 const MAX_TEXT = 180;
 
 export const fmt = (v = 0) =>
@@ -77,26 +77,45 @@ const collPath = (name) => collection(db, 'users', state.user.uid, name);
 const itemPath = (name, id) => doc(db, 'users', state.user.uid, name, id);
 
 async function logEvent(level, message, payload = {}) {
-  try {
-    const data = {
-      level,
-      message,
-      payload,
-      uid: state.user?.uid || null,
-      email: state.user?.email || null,
-      createdAt: serverTimestamp(),
-      userAgent: navigator.userAgent,
-      appId: firebaseConfig.appId,
-      projectId: firebaseConfig.projectId
-    };
+  const data = {
+    level,
+    message,
+    payload,
+    uid: state.user?.uid || null,
+    email: state.user?.email || null,
+    createdAt: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    appId: firebaseConfig.appId,
+    projectId: firebaseConfig.projectId
+  };
 
-    await addDoc(collection(db, 'logs'), data);
+  const dbData = {
+    ...data,
+    createdAt: serverTimestamp()
+  };
+
+  try {
+    const tasks = [addDoc(collection(db, 'logs'), dbData)];
     if (state.user?.uid) {
-      await addDoc(collection(db, 'users', state.user.uid, 'logs'), data);
+      tasks.push(addDoc(collection(db, 'users', state.user.uid, 'logs'), dbData));
     }
+    tasks.push(fetch('/api/slack-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      keepalive: true
+    }));
+
+    await Promise.allSettled(tasks);
   } catch (err) {
     console.warn('Falha ao gravar log no Firestore:', err?.message || err);
   }
+}
+
+export async function actionSendFeedback(message = '', payload = {}) {
+  const msg = normText(message, 240);
+  if (!msg) throw new Error('Escreva um feedback antes de enviar.');
+  await logEvent('feedback', msg, payload);
 }
 
 async function loadCollection(name) {
