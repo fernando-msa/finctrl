@@ -64,22 +64,13 @@ fincrtl/
 
 ---
 
-## PASSO 2 — Configurar js/firebase.js
+## PASSO 2 — Configurar `js/firebase.js`
 
-O projeto já está com as credenciais carregadas em `js/firebase.js`:
+Preencha `js/firebase.js` com os dados do seu próprio projeto Firebase.
 
-```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSyDnqqfvrAJdEJFzDNjt4gohg6h63unL8g4",
-  authDomain: "fincrtl-3e976.firebaseapp.com",
-  projectId: "fincrtl-3e976",
-  storageBucket: "fincrtl-3e976.firebasestorage.app",
-  messagingSenderId: "1052094135775",
-  appId: "1:1052094135775:web:d25f0dd40c5d992437186a",
-  measurementId: "G-BLK1Q2494Z",
-  databaseURL: "https://fincrtl-3e976-default-rtdb.firebaseio.com"
-};
-```
+> ⚠️ **Não publique neste README, issues ou PRs**: `serviceAccountKey.json`, tokens, webhooks, senhas ou qualquer segredo.
+>
+> O `firebaseConfig` do frontend não substitui regras de segurança: proteja acesso aos dados com `firestore.rules`.
 
 ### Firebase Admin (backend)
 
@@ -96,6 +87,17 @@ O app agora grava logs automaticamente no Firestore em:
 - `users/{uid}/logs/{autoId}` (logs por usuário)
 
 Campos gravados: `level`, `message`, `payload`, `uid`, `email`, `createdAt`, `userAgent`.
+
+### Centralizar erros/feedback no Slack
+
+Foi adicionada uma API serverless em `api/slack-log.js`, acionada automaticamente pelo app ao registrar logs.
+
+1. Crie um **Incoming Webhook** no Slack do canal desejado.
+2. No Vercel, configure a variável de ambiente:
+   - `SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...`
+3. Faça novo deploy.
+
+Pronto: erros e feedbacks enviados via `logEvent` passam a ser encaminhados para o Slack.
 
 ---
 
@@ -116,6 +118,10 @@ cd fincrtl/
 vercel login
 vercel --prod
 ```
+
+### Variáveis de ambiente recomendadas (Vercel)
+
+- `SLACK_WEBHOOK_URL` → webhook de alertas operacionais no Slack.
 
 ### Configurar domínio autorizado no Firebase
 
@@ -180,6 +186,7 @@ users/
 | Dados por usuário isolados | ✅ |
 | Wizard de onboarding (5 etapas) | ✅ |
 | Cadastro de dívidas/empréstimos | ✅ |
+| Edição de dívidas e gastos | ✅ |
 | Gastos fixos por categoria e pessoa | ✅ |
 | FGTS antecipado (múltiplos contratos) | ✅ |
 | Metas financeiras com progresso | ✅ |
@@ -187,6 +194,7 @@ users/
 | Diagnóstico da conta (usuário) | ✅ |
 | Painel Admin técnico (restrito) | ✅ |
 | Alertas automáticos de risco | ✅ |
+| Recomendações personalizadas | ✅ |
 | Painel por dependente | ✅ |
 | Fluxo de caixa visual | ✅ |
 | Sincronização em nuvem (Firestore) | ✅ |
@@ -207,3 +215,12 @@ users/
 **Dados não aparecem após login:**
 - O `onAuthStateChanged` pode demorar 1-2s para disparar — é normal
 - Verifique se as credenciais em `firebase.js` estão corretas
+
+---
+
+## Boas práticas de segurança (público)
+
+- Nunca comite segredos (webhooks, chaves privadas, service accounts, tokens).
+- Não exponha e-mails pessoais/admin em documentação pública.
+- Mantenha o acesso administrativo protegido por regras de backend, não apenas por ocultação no frontend.
+- Revise periodicamente as regras do Firestore e os domínios autorizados no Firebase Auth.

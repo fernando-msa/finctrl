@@ -8,6 +8,9 @@ import {
 
 import {
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithPopup,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -42,12 +45,19 @@ export const state = {
   method: 'avalanche'
 };
 
-const ADMIN_EMAILS = ['ribeirojunior270@gmail.com'];
-const ADMIN_ACCESS_MODE = 'all-authenticated'; // 'allowlist' | 'all-authenticated'
+const ADMIN_EMAILS = []; // Ex: ['admin@seudominio.com']
+const ADMIN_ACCESS_MODE = 'allowlist'; // 'allowlist' | 'all-authenticated'
 const MAX_TEXT = 180;
 
 export const fmt = (v = 0) =>
   Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export const getAvatarDataUrl = (name = 'U') => {
+  const safe = normText(String(name || 'U').replace(/[^\p{L}\p{N}\s]/gu, ''), 24) || 'U';
+  const first = safe.trim().charAt(0).toUpperCase() || 'U';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='%23242a35'/><text x='50%' y='56%' dominant-baseline='middle' text-anchor='middle' fill='%23f5f5f5' font-family='Inter,Arial,sans-serif' font-size='30' font-weight='700'>${first}</text></svg>`;
+  return `data:image/svg+xml,${svg}`;
+};
 
 export const esc = (value = '') => String(value)
   .replaceAll('&', '&amp;')
@@ -67,26 +77,45 @@ const collPath = (name) => collection(db, 'users', state.user.uid, name);
 const itemPath = (name, id) => doc(db, 'users', state.user.uid, name, id);
 
 async function logEvent(level, message, payload = {}) {
-  try {
-    const data = {
-      level,
-      message,
-      payload,
-      uid: state.user?.uid || null,
-      email: state.user?.email || null,
-      createdAt: serverTimestamp(),
-      userAgent: navigator.userAgent,
-      appId: firebaseConfig.appId,
-      projectId: firebaseConfig.projectId
-    };
+  const data = {
+    level,
+    message,
+    payload,
+    uid: state.user?.uid || null,
+    email: state.user?.email || null,
+    createdAt: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    appId: firebaseConfig.appId,
+    projectId: firebaseConfig.projectId
+  };
 
-    await addDoc(collection(db, 'logs'), data);
+  const dbData = {
+    ...data,
+    createdAt: serverTimestamp()
+  };
+
+  try {
+    const tasks = [addDoc(collection(db, 'logs'), dbData)];
     if (state.user?.uid) {
-      await addDoc(collection(db, 'users', state.user.uid, 'logs'), data);
+      tasks.push(addDoc(collection(db, 'users', state.user.uid, 'logs'), dbData));
     }
+    tasks.push(fetch('/api/slack-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      keepalive: true
+    }));
+
+    await Promise.allSettled(tasks);
   } catch (err) {
     console.warn('Falha ao gravar log no Firestore:', err?.message || err);
   }
+}
+
+export async function actionSendFeedback(message = '', payload = {}) {
+  const msg = normText(message, 240);
+  if (!msg) throw new Error('Escreva um feedback antes de enviar.');
+  await logEvent('feedback', msg, payload);
 }
 
 async function loadCollection(name) {
@@ -116,6 +145,38 @@ function applyAdminNavVisibility() {
   });
 }
 
+function initSidebarLayout() {
+  const header = document.getElementById('app-header');
+  const nav = header?.querySelector('.nav-tabs');
+  if (!header || !nav || header.dataset.sidebarReady === '1') return;
+  header.dataset.sidebarReady = '1';
+  document.body.classList.add('layout-sidebar');
+
+  nav.querySelectorAll('.nav-tab').forEach((tab) => {
+    if (!tab.title) tab.title = tab.textContent?.trim() || 'Guia';
+  });
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'sidebar-toggle';
+  toggle.id = 'sidebar-toggle';
+  const apply = (collapsed) => {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    toggle.textContent = collapsed ? '☰' : 'Ocultar menu';
+    toggle.title = collapsed ? 'Mostrar menu lateral' : 'Ocultar menu lateral';
+  };
+
+  const stored = localStorage.getItem('fincrtl.sidebarCollapsed') === '1';
+  apply(stored);
+  toggle.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    apply(collapsed);
+    localStorage.setItem('fincrtl.sidebarCollapsed', collapsed ? '1' : '0');
+  });
+
+  header.insertBefore(toggle, nav);
+}
+
 const normText = (value, max = MAX_TEXT) => String(value || '').trim().slice(0, max);
 const normMoney = (value) => {
   const n = Number(value);
@@ -142,6 +203,7 @@ async function loadUserData(user) {
       onboardingDone: false,
       ...profileSnap.data()
     };
+    state.method = state.profile?.method || state.method;
   } else {
     state.profile = {
       name: user.displayName || '',
@@ -177,6 +239,7 @@ export async function actionSaveProfile(partial = {}) {
     ...state.profile,
     ...partial
   };
+  state.method = state.profile?.method || state.method;
 
   await setDoc(uidPath(), {
     ...state.profile,
@@ -268,6 +331,31 @@ export async function actionAddDebt(data = {}) {
   state.debts.push({ id: ref.id, ...payload });
 }
 
+export async function actionUpdateDebt(id, data = {}) {
+  const debt = state.debts.find((d) => d.id === id);
+  if (!debt) throw new Error('Dívida não encontrada.');
+
+  const name = normText(data.name, 120);
+  if (!name) throw new Error('Informe o credor.');
+
+  const payload = {
+    name,
+    type: normText(data.type, 60) || 'Outro',
+    total: normMoney(data.total),
+    monthly: normMoney(data.monthly),
+    rate: normMoney(data.rate),
+    parcels: normInt(data.parcels, 0),
+    status: ['em_dia', 'atrasada', 'negociando'].includes(data.status) ? data.status : 'em_dia',
+    delay: normInt(data.delay, 0),
+    obs: normText(data.obs, 240),
+    paid: Boolean(data.paid),
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(itemPath('debts', id), payload);
+  Object.assign(debt, payload);
+}
+
 export async function actionDeleteDebt(id) {
   await deleteDoc(itemPath('debts', id));
   state.debts = state.debts.filter((d) => d.id !== id);
@@ -295,6 +383,26 @@ export async function actionAddExpense(data = {}) {
   };
   const ref = await addDoc(collPath('expenses'), payload);
   state.expenses.push({ id: ref.id, ...payload });
+}
+
+export async function actionUpdateExpense(id, data = {}) {
+  const expense = state.expenses.find((e) => e.id === id);
+  if (!expense) throw new Error('Gasto não encontrado.');
+
+  const name = normText(data.name, 120);
+  if (!name) throw new Error('Informe a descrição.');
+
+  const payload = {
+    name,
+    cat: normText(data.cat, 40) || 'outro',
+    val: normMoney(data.val),
+    person: normText(data.person, 80),
+    obs: normText(data.obs, 240),
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(itemPath('expenses', id), payload);
+  Object.assign(expense, payload);
 }
 
 export async function actionDeleteExpense(id) {
@@ -360,6 +468,40 @@ export async function handleLogin() {
   }
 }
 
+export async function handleEmailLogin(email = '', password = '') {
+  const cleanEmail = normText(email, 120).toLowerCase();
+  if (!cleanEmail || !password) throw new Error('Informe e-mail e senha.');
+  try {
+    await signInWithEmailAndPassword(auth, cleanEmail, password);
+  } catch (err) {
+    await logEvent('error', 'Falha no login por e-mail', { code: err?.code, message: err?.message });
+    throw new Error('Não foi possível entrar com e-mail e senha. Verifique os dados.');
+  }
+}
+
+export async function handleEmailRegister(email = '', password = '') {
+  const cleanEmail = normText(email, 120).toLowerCase();
+  if (!cleanEmail || !password) throw new Error('Informe e-mail e senha.');
+  if (String(password).length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
+  try {
+    await createUserWithEmailAndPassword(auth, cleanEmail, password);
+  } catch (err) {
+    await logEvent('error', 'Falha no cadastro por e-mail', { code: err?.code, message: err?.message });
+    throw new Error('Não foi possível cadastrar com e-mail e senha.');
+  }
+}
+
+export async function handlePasswordReset(email = '') {
+  const cleanEmail = normText(email, 120).toLowerCase();
+  if (!cleanEmail) throw new Error('Informe o e-mail para recuperação.');
+  try {
+    await sendPasswordResetEmail(auth, cleanEmail);
+  } catch (err) {
+    await logEvent('error', 'Falha no reset de senha', { code: err?.code, message: err?.message });
+    throw new Error('Não foi possível enviar e-mail de recuperação.');
+  }
+}
+
 export async function handleLogout() {
   try {
     await signOut(auth);
@@ -395,3 +537,9 @@ console.info('[FinCtrl] Firebase inicializado:', {
   app: app.name,
   projectId: firebaseConfig.projectId
 });
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSidebarLayout);
+} else {
+  initSidebarLayout();
+}
