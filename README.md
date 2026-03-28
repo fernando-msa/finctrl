@@ -180,6 +180,7 @@ users/
 | Dados por usuário isolados | ✅ |
 | Wizard de onboarding (5 etapas) | ✅ |
 | Cadastro de dívidas/empréstimos | ✅ |
+| Edição de dívidas e gastos | ✅ |
 | Gastos fixos por categoria e pessoa | ✅ |
 | FGTS antecipado (múltiplos contratos) | ✅ |
 | Metas financeiras com progresso | ✅ |
@@ -187,6 +188,7 @@ users/
 | Diagnóstico da conta (usuário) | ✅ |
 | Painel Admin técnico (restrito) | ✅ |
 | Alertas automáticos de risco | ✅ |
+| Recomendações personalizadas | ✅ |
 | Painel por dependente | ✅ |
 | Fluxo de caixa visual | ✅ |
 | Sincronização em nuvem (Firestore) | ✅ |

@@ -100,6 +100,10 @@
     <!-- Alerts -->
     <div id="alerts-box"></div>
 
+    <!-- Recomendações -->
+    <div class="sec-head">Plano recomendado para você</div>
+    <div id="recommend-box" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;"></div>
+
     <!-- Cashflow -->
     <div class="sec-head">Fluxo de Caixa</div>
     <div id="cashflow-box" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;"></div>
@@ -176,6 +180,41 @@
     if (!alerts.length)   alerts.push(`<div class="alert ok"><strong>✅ Situação sob controle.</strong> Continue seguindo o plano!</div>`);
     document.getElementById('alerts-box').innerHTML = alerts.join('');
     document.getElementById('alert-pill').textContent = ac + (ac===1?' alerta':' alertas');
+
+    // Personalized recommendations
+    const activeDebts = getActiveDebts();
+    const overdue = activeDebts.filter(d => d.status === 'atrasada');
+    const highRate = activeDebts.filter(d => Number(d.rate || 0) >= 8);
+    const method = state.profile?.method || 'avalanche';
+    const topDebt = [...activeDebts].sort((a, b) => Number(b.rate || 0) - Number(a.rate || 0))[0];
+    const recs = [];
+
+    if (free <= 0) {
+      recs.push('🔴 Seu caixa está negativo. Priorize renegociação das parcelas e corte temporário de gastos não essenciais.');
+    } else if (free < 300) {
+      recs.push(`🟠 Margem mensal curta (${fmt(free)}). Crie um teto de gastos variável para evitar novo atraso.`);
+    } else {
+      recs.push(`🟢 Você tem ${fmt(free)} de folga. Direcione esse valor para amortizar dívida prioritária.`);
+    }
+    if (overdue.length) {
+      recs.push(`🚨 Você possui ${overdue.length} dívida(s) em atraso. Foque primeiro em regularizar: ${overdue.map(d=>esc(d.name)).join(', ')}.`);
+    }
+    if (highRate.length && topDebt) {
+      recs.push(`⚡ Comece pela dívida de juros mais altos: ${esc(topDebt.name)} (${topDebt.rate}%/mês).`);
+    }
+    recs.push(`🧭 Método atual: <strong>${method === 'snowball' ? 'Bola de Neve' : 'Avalanche'}</strong>. Ajuste no botão ⚙ se quiser outro foco.`);
+    if ((state.profile?.focus || 'equilibrio') === 'cortar') {
+      recs.push('✂️ Seu foco está em reduzir gastos: revise categorias Alimentação, Transporte e Utilidades para buscar corte de 10%.');
+    }
+    if ((state.profile?.focus || 'equilibrio') === 'quitar') {
+      recs.push('💳 Seu foco está em quitação: mantenha pagamentos mínimos em todas e concentre sobra na dívida-alvo.');
+    }
+
+    document.getElementById('recommend-box').innerHTML = `
+      <ul style="margin:0;padding-left:18px;line-height:1.8;">
+        ${recs.map(r => `<li>${r}</li>`).join('')}
+      </ul>
+    `;
 
     // Cashflow
     const maxB = Math.max(inc, tm, te, emg, free, 1);

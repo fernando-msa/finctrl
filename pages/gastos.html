@@ -35,7 +35,10 @@
         <div class="fg"><label>Pessoa (opcional)</label><input id="g-person" type="text" placeholder="Marcos, Salette, Sabrina..."></div>
         <div class="fg fgrid-w2"><label>Observação</label><input id="g-obs" type="text" placeholder="Opcional"></div>
       </div>
-      <button class="btn btn-dark" onclick="doAddExp()">+ Adicionar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-dark" id="exp-submit-btn" onclick="doSaveExp()">+ Adicionar</button>
+        <button class="btn btn-outline" id="exp-cancel-btn" style="display:none;" onclick="cancelExpEdit()">Cancelar edição</button>
+      </div>
     </div>
     <div class="sec-head">Gastos Cadastrados <span class="pill" id="exp-total"></span></div>
     <div class="tbl-wrap">
@@ -45,8 +48,20 @@
   </div>
 </div>
 <script type="module">
-  import { initAuth, state, fmt, esc, CAT_LABELS, actionAddExpense, actionDeleteExpense, toast, handleLogout as _out } from '../js/app.js';
+  import { initAuth, state, fmt, esc, CAT_LABELS, actionAddExpense, actionUpdateExpense, actionDeleteExpense, toast, handleLogout as _out } from '../js/app.js';
   window.handleLogout = _out;
+  let editingExpenseId = null;
+
+  function clearExpForm() {
+    ['g-name','g-val','g-person','g-obs'].forEach((id)=>document.getElementById(id).value='');
+    document.getElementById('g-cat').value='moradia';
+  }
+
+  function setExpMode(isEditing=false) {
+    document.getElementById('exp-submit-btn').textContent = isEditing ? '💾 Salvar edição' : '+ Adicionar';
+    document.getElementById('exp-cancel-btn').style.display = isEditing ? '' : 'none';
+  }
+
   function render(){
     const tb=document.getElementById('exp-tbody');
     const total=state.expenses.reduce((s,e)=>s+e.val,0);
@@ -56,14 +71,46 @@
       <td><strong>${esc(e.name)}</strong></td><td>${esc(CAT_LABELS[e.cat]||e.cat)}</td>
       <td>${esc(e.person||'—')}</td><td class="r num">${fmt(e.val)}</td>
       <td style="color:var(--muted);font-size:0.72rem;">${esc(e.obs||'—')}</td>
-      <td><button class="ib" onclick="doDel('${e.id}')">✕</button></td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="ib" title="Editar" onclick="doEditExp('${e.id}')">✎</button>
+        <button class="ib" onclick="doDel('${e.id}')">✕</button>
+      </div></td>
     </tr>`).join('');
   }
-  window.doAddExp=async()=>{
+  window.doSaveExp=async()=>{
     const name=document.getElementById('g-name').value.trim();
     if(!name){toast('Informe a descrição.','warn');return;}
     const data={name,cat:document.getElementById('g-cat').value,val:parseFloat(document.getElementById('g-val').value)||0,person:document.getElementById('g-person').value.trim(),obs:document.getElementById('g-obs').value.trim()};
-    try{await actionAddExpense(data);['g-name','g-val','g-person','g-obs'].forEach(id=>document.getElementById(id).value='');toast('✅ Gasto adicionado!','ok');render();}catch(e){toast('Erro: '+e.message,'danger');}
+    try{
+      if (editingExpenseId) {
+        await actionUpdateExpense(editingExpenseId, data);
+        toast('✅ Gasto atualizado!','ok');
+      } else {
+        await actionAddExpense(data);
+        toast('✅ Gasto adicionado!','ok');
+      }
+      editingExpenseId = null;
+      setExpMode(false);
+      clearExpForm();
+      render();
+    }catch(e){toast('Erro: '+e.message,'danger');}
+  };
+  window.doEditExp=(id)=>{
+    const item=state.expenses.find((e)=>e.id===id);
+    if(!item) return;
+    editingExpenseId = id;
+    document.getElementById('g-name').value=item.name||'';
+    document.getElementById('g-cat').value=item.cat||'outro';
+    document.getElementById('g-val').value=item.val||'';
+    document.getElementById('g-person').value=item.person||'';
+    document.getElementById('g-obs').value=item.obs||'';
+    setExpMode(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  window.cancelExpEdit=()=>{
+    editingExpenseId = null;
+    setExpMode(false);
+    clearExpForm();
   };
   window.doDel=async(id)=>{if(!confirm('Remover?'))return;await actionDeleteExpense(id);toast('Removido.','ok');render();};
   initAuth(user=>{document.getElementById('loading-screen').style.display='none';document.getElementById('app-shell').style.display='block';document.getElementById('user-name').textContent=state.profile?.name||user.displayName||'';document.getElementById('user-photo').src=user.photoURL||'';render();},()=>{window.location.href='../index.html';});

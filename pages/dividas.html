@@ -54,8 +54,9 @@
         <div class="fg"><label>Meses em atraso</label><input id="d-delay" type="number" placeholder="0" value="0"></div>
         <div class="fg fgrid-w2"><label>Observação</label><input id="d-obs" type="text" placeholder="Opcional: banco, contrato, etc."></div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-dark" onclick="doAddDebt()">+ Adicionar dívida</button>
+      <div class="btn-row" style="display:flex;gap:8px;">
+        <button class="btn btn-dark" id="debt-submit-btn" onclick="doSaveDebt()">+ Adicionar dívida</button>
+        <button class="btn btn-outline" id="debt-cancel-btn" style="display:none;" onclick="cancelDebtEdit()">Cancelar edição</button>
       </div>
     </div>
 
@@ -71,8 +72,24 @@
 </div>
 
 <script type="module">
-  import { initAuth, state, fmt, esc, actionAddDebt, actionDeleteDebt, actionTogglePaid, toast, handleLogout as _out } from '../js/app.js';
+  import { initAuth, state, fmt, esc, actionAddDebt, actionUpdateDebt, actionDeleteDebt, actionTogglePaid, toast, handleLogout as _out } from '../js/app.js';
   window.handleLogout = _out;
+  let editingDebtId = null;
+
+  function clearDebtForm() {
+    ['d-name','d-total','d-monthly','d-rate','d-parcels','d-delay','d-obs'].forEach((id) => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('d-status').value = 'em_dia';
+    document.getElementById('d-type').selectedIndex = 0;
+  }
+
+  function setDebtMode(isEditing = false) {
+    const submit = document.getElementById('debt-submit-btn');
+    const cancel = document.getElementById('debt-cancel-btn');
+    submit.textContent = isEditing ? '💾 Salvar edição' : '+ Adicionar dívida';
+    cancel.style.display = isEditing ? '' : 'none';
+  }
 
   function render() {
     const tbody = document.getElementById('debt-tbody');
@@ -101,6 +118,7 @@
         <td>${alertHtml}</td>
         <td style="color:var(--muted);font-size:0.72rem;">${esc(d.obs||'—')}</td>
         <td><div style="display:flex;gap:4px;">
+          <button class="ib" title="Editar" onclick="doEdit('${d.id}')">✎</button>
           <button class="ib ok" title="${d.paid?'Reabrir':'Marcar quitado'}" onclick="doToggle('${d.id}')">${d.paid?'↩':'✓'}</button>
           <button class="ib" onclick="doDelete('${d.id}')">✕</button>
         </div></td>
@@ -108,7 +126,7 @@
     }).join('');
   }
 
-  window.doAddDebt = async () => {
+  window.doSaveDebt = async () => {
     const name = document.getElementById('d-name').value.trim();
     if(!name){toast('Informe o credor.','warn');return;}
     const data = {
@@ -123,10 +141,40 @@
       obs:     document.getElementById('d-obs').value.trim(),
     };
     try {
-      await actionAddDebt(data);
-      ['d-name','d-total','d-monthly','d-rate','d-parcels','d-delay','d-obs'].forEach(id=>document.getElementById(id).value='');
-      toast('✅ Dívida adicionada!','ok'); render();
+      if (editingDebtId) {
+        const current = state.debts.find((d) => d.id === editingDebtId);
+        await actionUpdateDebt(editingDebtId, { ...data, paid: Boolean(current?.paid) });
+        toast('✅ Dívida atualizada!','ok');
+      } else {
+        await actionAddDebt(data);
+        toast('✅ Dívida adicionada!','ok');
+      }
+      editingDebtId = null;
+      setDebtMode(false);
+      clearDebtForm();
+      render();
     } catch(e) { toast('Erro: '+e.message,'danger'); }
+  };
+  window.doEdit = (id) => {
+    const debt = state.debts.find((d) => d.id === id);
+    if (!debt) return;
+    editingDebtId = id;
+    document.getElementById('d-name').value = debt.name || '';
+    document.getElementById('d-type').value = debt.type || 'Outro';
+    document.getElementById('d-total').value = debt.total || '';
+    document.getElementById('d-monthly').value = debt.monthly || '';
+    document.getElementById('d-rate').value = debt.rate || '';
+    document.getElementById('d-parcels').value = debt.parcels || '';
+    document.getElementById('d-status').value = debt.status || 'em_dia';
+    document.getElementById('d-delay').value = debt.delay || 0;
+    document.getElementById('d-obs').value = debt.obs || '';
+    setDebtMode(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  window.cancelDebtEdit = () => {
+    editingDebtId = null;
+    setDebtMode(false);
+    clearDebtForm();
   };
   window.doDelete = async (id) => {
     if(!confirm('Remover essa dívida?')) return;

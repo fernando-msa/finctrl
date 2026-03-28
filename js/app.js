@@ -142,6 +142,7 @@ async function loadUserData(user) {
       onboardingDone: false,
       ...profileSnap.data()
     };
+    state.method = state.profile?.method || state.method;
   } else {
     state.profile = {
       name: user.displayName || '',
@@ -177,6 +178,7 @@ export async function actionSaveProfile(partial = {}) {
     ...state.profile,
     ...partial
   };
+  state.method = state.profile?.method || state.method;
 
   await setDoc(uidPath(), {
     ...state.profile,
@@ -268,6 +270,31 @@ export async function actionAddDebt(data = {}) {
   state.debts.push({ id: ref.id, ...payload });
 }
 
+export async function actionUpdateDebt(id, data = {}) {
+  const debt = state.debts.find((d) => d.id === id);
+  if (!debt) throw new Error('Dívida não encontrada.');
+
+  const name = normText(data.name, 120);
+  if (!name) throw new Error('Informe o credor.');
+
+  const payload = {
+    name,
+    type: normText(data.type, 60) || 'Outro',
+    total: normMoney(data.total),
+    monthly: normMoney(data.monthly),
+    rate: normMoney(data.rate),
+    parcels: normInt(data.parcels, 0),
+    status: ['em_dia', 'atrasada', 'negociando'].includes(data.status) ? data.status : 'em_dia',
+    delay: normInt(data.delay, 0),
+    obs: normText(data.obs, 240),
+    paid: Boolean(data.paid),
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(itemPath('debts', id), payload);
+  Object.assign(debt, payload);
+}
+
 export async function actionDeleteDebt(id) {
   await deleteDoc(itemPath('debts', id));
   state.debts = state.debts.filter((d) => d.id !== id);
@@ -295,6 +322,26 @@ export async function actionAddExpense(data = {}) {
   };
   const ref = await addDoc(collPath('expenses'), payload);
   state.expenses.push({ id: ref.id, ...payload });
+}
+
+export async function actionUpdateExpense(id, data = {}) {
+  const expense = state.expenses.find((e) => e.id === id);
+  if (!expense) throw new Error('Gasto não encontrado.');
+
+  const name = normText(data.name, 120);
+  if (!name) throw new Error('Informe a descrição.');
+
+  const payload = {
+    name,
+    cat: normText(data.cat, 40) || 'outro',
+    val: normMoney(data.val),
+    person: normText(data.person, 80),
+    obs: normText(data.obs, 240),
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(itemPath('expenses', id), payload);
+  Object.assign(expense, payload);
 }
 
 export async function actionDeleteExpense(id) {
