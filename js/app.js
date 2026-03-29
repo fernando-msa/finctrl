@@ -141,6 +141,14 @@ async function logEvent(level, message, payload = {}) {
     if (!resp.ok) {
       console.warn('[FinCtrl] Falha ao enviar log para Slack:', slackResult);
     }
+    tasks.push(fetch('/api/slack-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      keepalive: true
+    }));
+
+    await Promise.allSettled(tasks);
   } catch (err) {
     slackResult.error = err?.message || String(err);
     console.warn('Falha ao gravar log no Firestore/Slack:', err?.message || err);
