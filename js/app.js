@@ -187,6 +187,8 @@ function initSidebarLayout() {
   header.dataset.sidebarReady = '1';
   document.body.classList.add('layout-sidebar');
 
+  const mobileQuery = window.matchMedia('(max-width: 860px)');
+
   nav.querySelectorAll('.nav-tab').forEach((tab) => {
     if (!tab.title) tab.title = tab.textContent?.trim() || 'Guia';
   });
@@ -195,17 +197,51 @@ function initSidebarLayout() {
   toggle.type = 'button';
   toggle.className = 'sidebar-toggle';
   toggle.id = 'sidebar-toggle';
-  const apply = (collapsed) => {
+  const setToggleLabel = () => {
+    if (mobileQuery.matches) {
+      const isOpen = document.body.classList.contains('sidebar-mobile-open');
+      toggle.textContent = isOpen ? '✕ Fechar menu' : '☰ Menu';
+      toggle.title = isOpen ? 'Fechar menu' : 'Abrir menu';
+      return;
+    }
+    const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+    toggle.textContent = isCollapsed ? '☰' : 'Ocultar menu';
+    toggle.title = isCollapsed ? 'Mostrar menu lateral' : 'Ocultar menu lateral';
+  };
+  const applyDesktop = (collapsed) => {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
-    toggle.textContent = collapsed ? '☰' : 'Ocultar menu';
-    toggle.title = collapsed ? 'Mostrar menu lateral' : 'Ocultar menu lateral';
+    setToggleLabel();
+  };
+  const applyMobile = (open) => {
+    document.body.classList.toggle('sidebar-mobile-open', open);
+    setToggleLabel();
   };
 
-  const stored = localStorage.getItem('fincrtl.sidebarCollapsed') === '1';
-  apply(stored);
+  const storedDesktop = localStorage.getItem('fincrtl.sidebarCollapsed') === '1';
+  const storedMobile = localStorage.getItem('fincrtl.sidebarMobileOpen') === '1';
+  const syncLayout = () => {
+    if (mobileQuery.matches) {
+      document.body.classList.remove('sidebar-collapsed');
+      applyMobile(storedMobile);
+    } else {
+      document.body.classList.remove('sidebar-mobile-open');
+      applyDesktop(storedDesktop);
+    }
+  };
+
+  syncLayout();
+  mobileQuery.addEventListener('change', syncLayout);
+
   toggle.addEventListener('click', () => {
+    if (mobileQuery.matches) {
+      const open = !document.body.classList.contains('sidebar-mobile-open');
+      applyMobile(open);
+      localStorage.setItem('fincrtl.sidebarMobileOpen', open ? '1' : '0');
+      return;
+    }
+
     const collapsed = !document.body.classList.contains('sidebar-collapsed');
-    apply(collapsed);
+    applyDesktop(collapsed);
     localStorage.setItem('fincrtl.sidebarCollapsed', collapsed ? '1' : '0');
   });
 
