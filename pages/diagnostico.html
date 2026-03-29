@@ -39,7 +39,10 @@
       <button class="btn btn-outline" id="f-info" onclick="setFilter('info')">Info</button>
       <button class="btn btn-outline" id="f-warn" onclick="setFilter('warn')">Warn</button>
       <button class="btn btn-outline" onclick="refreshLogs()">↻ Atualizar</button>
+      <button class="btn btn-outline" onclick="testSlackHealth()">🩺 Testar API Slack</button>
+      <button class="btn btn-outline" onclick="testSlackSend()">📨 Enviar teste Slack</button>
     </div>
+    <div id="slack-test-result" class="mini-note" style="margin-bottom:0.75rem;"></div>
 
     <div class="tbl-wrap">
       <table>
@@ -64,6 +67,7 @@
     getFreeAmount,
     getCommitPct,
     loadRecentLogs,
+    actionSendFeedback,
     esc,
     toast,
     handleLogout as _out
@@ -157,6 +161,42 @@
       renderLogs();
     } catch (err) {
       toast('Erro ao carregar logs: ' + (err?.message || err), 'danger');
+    }
+  };
+
+  window.testSlackHealth = async () => {
+    const out = document.getElementById('slack-test-result');
+    out.textContent = 'Testando /api/slack-log...';
+    try {
+      const resp = await fetch('/api/slack-log');
+      const body = await resp.json();
+      out.textContent = `Healthcheck: HTTP ${resp.status} · ${safeJson(body)}`;
+      if (!resp.ok) toast('API Slack indisponível.', 'err');
+    } catch (err) {
+      out.textContent = `Falha no healthcheck: ${err?.message || err}`;
+      toast('Falha ao testar API Slack.', 'err');
+    }
+  };
+
+  window.testSlackSend = async () => {
+    const out = document.getElementById('slack-test-result');
+    out.textContent = 'Enviando mensagem de teste para Slack...';
+    try {
+      const result = await actionSendFeedback('teste manual via diagnóstico', {
+        type: 'feedback',
+        page: window.location.pathname,
+        from: 'diagnostico'
+      });
+      out.textContent = `Envio: ${safeJson(result?.slack || {})}`;
+      if (result?.slack?.ok) {
+        toast('✅ Teste enviado ao Slack.', 'ok');
+      } else {
+        toast('⚠ Teste registrado, mas Slack não confirmou entrega.', 'err');
+      }
+      await window.refreshLogs();
+    } catch (err) {
+      out.textContent = `Falha no envio: ${err?.message || err}`;
+      toast('Falha ao enviar teste para Slack.', 'err');
     }
   };
 
