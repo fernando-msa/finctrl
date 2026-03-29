@@ -121,15 +121,14 @@ async function logEvent(level, message, payload = {}) {
     if (state.user?.uid) {
       tasks.push(addDoc(collection(db, 'users', state.user.uid, 'logs'), dbData));
     }
-    await Promise.allSettled(tasks);
-
-    const resp = await fetch('/api/slack-log', {
+    const slackTask = fetch('/api/slack-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
       keepalive: true
     });
-
+    await Promise.allSettled(tasks);
+    const resp = await slackTask;
     slackResult.ok = resp.ok;
     slackResult.status = resp.status;
     try {
@@ -141,34 +140,6 @@ async function logEvent(level, message, payload = {}) {
     if (!resp.ok) {
       console.warn('[FinCtrl] Falha ao enviar log para Slack:', slackResult);
     }
-    await Promise.allSettled(tasks);
-
-    const resp = await fetch('/api/slack-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-      keepalive: true
-    });
-
-    slackResult.ok = resp.ok;
-    slackResult.status = resp.status;
-    try {
-      slackResult.body = await resp.json();
-      if (slackResult.body?.skipped) slackResult.skipped = slackResult.body.skipped;
-    } catch {
-      slackResult.body = null;
-    }
-    if (!resp.ok) {
-      console.warn('[FinCtrl] Falha ao enviar log para Slack:', slackResult);
-    }
-    tasks.push(fetch('/api/slack-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-      keepalive: true
-    }));
-
-    await Promise.allSettled(tasks);
   } catch (err) {
     slackResult.error = err?.message || String(err);
     console.warn('Falha ao gravar log no Firestore/Slack:', err?.message || err);
