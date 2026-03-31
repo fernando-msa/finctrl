@@ -4,8 +4,10 @@ import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.5/firebas
 import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 import { getAnalytics, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js';
 
-// Configuração do projeto FinCtrl (frontend)
-const firebaseConfig = {
+// Config padrão público do app (Firebase Web Config não é segredo).
+// Pode ser sobrescrito por `window.__FINCTRL_FIREBASE_CONFIG__`
+// para ambientes locais/staging sem alterar o código versionado.
+const defaultFirebaseConfig = {
   apiKey: 'AIzaSyDnqqfvrAJdEJFzDNjt4gohg6h63unL8g4',
   authDomain: 'fincrtl-3e976.firebaseapp.com',
   projectId: 'fincrtl-3e976',
@@ -15,6 +17,15 @@ const firebaseConfig = {
   measurementId: 'G-BLK1Q2494Z',
   databaseURL: 'https://fincrtl-3e976-default-rtdb.firebaseio.com'
 };
+
+if (!globalThis.__FINCTRL_FIREBASE_CONFIG__) {
+  globalThis.__FINCTRL_FIREBASE_CONFIG__ = { ...defaultFirebaseConfig };
+  console.info('[FinCtrl] window.__FINCTRL_FIREBASE_CONFIG__ não encontrado. Config padrão aplicada.');
+} else {
+  console.info('[FinCtrl] Firebase config carregado via window.__FINCTRL_FIREBASE_CONFIG__.');
+}
+
+const firebaseConfig = globalThis.__FINCTRL_FIREBASE_CONFIG__;
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 

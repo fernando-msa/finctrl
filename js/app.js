@@ -2,7 +2,6 @@ import {
   auth,
   googleProvider,
   db,
-  app,
   firebaseConfig
 } from './firebase.js';
 

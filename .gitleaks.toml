@@ -1,0 +1,17 @@
+title = "FinCtrl Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Exemplos e placeholders de documentação"
+regexes = [
+  '''SLACK_WEBHOOK_URL=https://hooks\.slack\.com/services/<seu-webhook>''',
+  '''SLACK_BOT_TOKEN=<seu-bot-token>''',
+  '''apiKey:\s*'COLE_AQUI''',
+  '''AIzaSyDnqqfvrAJdEJFzDNjt4gohg6h63unL8g4'''
+]
+paths = [
+  '''README\.md''',
+  '''js/firebase-config\.example\.js'''
+]

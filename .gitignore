@@ -1,0 +1,16 @@
+# Local/front-end config (não versionar)
+js/firebase-config.local.js
+
+# Backend/admin secrets
+secrets/
+serviceAccountKey.json
+*.pem
+*.key
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
