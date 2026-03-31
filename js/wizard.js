@@ -78,6 +78,16 @@ function ensureModal() {
       onboardingDone: true,
       name: state.profile?.name || ''
     });
+    try {
+      const key = `fincrtl.missions.${state.user?.uid || 'anon'}`;
+      const current = JSON.parse(localStorage.getItem(key) || '{}');
+      if (!current.first_win_10m) {
+        current.first_win_10m = false;
+        localStorage.setItem(key, JSON.stringify(current));
+      }
+    } catch {
+      // noop
+    }
 
     toast('Configuração inicial salva!', 'ok');
     closeWizard();
