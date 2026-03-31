@@ -34,10 +34,14 @@
         </select></div>
         <div class="fg fgrid-w2"><label>Descrição (opcional)</label><input id="m-desc" type="text" placeholder="Detalhes da meta"></div>
       </div>
-      <button class="btn btn-dark" onclick="doAdd()">+ Adicionar meta</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-dark" onclick="doAdd()">+ Adicionar meta</button>
+        <button class="btn btn-outline" onclick="addGoalLadder()">Criar meta em escada</button>
+      </div>
     </div>
 
     <div class="sec-head">Suas Metas</div>
+    <div id="checkin-box" style="margin-bottom:10px;"></div>
     <div id="goals-list"><div class="empty"><div class="empty-icon">🎯</div>Nenhuma meta cadastrada ainda.</div></div>
   </div>
 </div>
@@ -46,14 +50,64 @@
   import { initAuth, state, fmt, pct, esc, actionAddGoal, actionDeleteGoal, toast, handleLogout as _out } from '../js/app.js';
   window.handleLogout = _out;
   const prioColor = { alta:'var(--red)', media:'var(--yellow)', baixa:'var(--green)' };
+  const checkinKey = () => `fincrtl.goal.checkins.${state.user?.uid || 'anon'}`;
+
+  function readCheckins() {
+    try { return JSON.parse(localStorage.getItem(checkinKey()) || '{}'); } catch { return {}; }
+  }
+
+  function writeCheckins(data) {
+    localStorage.setItem(checkinKey(), JSON.stringify(data));
+  }
+
+  function renderWeeklyCheckins() {
+    const map = readCheckins();
+    const rows = state.goals.slice(0, 3).map((g) => `
+      <label style="display:flex;align-items:center;gap:.5rem;margin:.35rem 0;">
+        <span style="min-width:180px;font-size:.78rem;">${esc(g.name)}</span>
+        <input type="number" min="0" step="0.01" value="${Number(map[g.id] || 0)}" data-checkin-id="${g.id}" style="max-width:140px;">
+      </label>
+    `).join('');
+    document.getElementById('checkin-box').innerHTML = state.goals.length ? `
+      <div class="plan-item">
+        <div class="plan-body">
+          <h4 style="margin:0 0 .4rem 0;">📅 Check-in semanal de aporte</h4>
+          ${rows}
+          <button class="btn btn-outline" id="save-checkins" style="margin-top:.4rem;">Salvar check-in</button>
+        </div>
+      </div>
+    ` : '';
+    const btn = document.getElementById('save-checkins');
+    if (btn) {
+      btn.onclick = () => {
+        const next = readCheckins();
+        document.querySelectorAll('[data-checkin-id]').forEach((input) => {
+          next[input.dataset.checkinId] = Number(input.value || 0);
+        });
+        writeCheckins(next);
+        toast('✅ Check-ins semanais salvos.', 'ok');
+        render();
+      };
+    }
+  }
+
+  function getEstimatedMonths(goal) {
+    const map = readCheckins();
+    const weekly = Number(map[goal.id] || 0);
+    const realMonthly = weekly > 0 ? weekly * 4.33 : Number(goal.monthly || 0);
+    const remaining = Math.max(0, Number(goal.target || 0) - Number(goal.saved || 0));
+    return realMonthly > 0 ? Math.ceil(remaining / realMonthly) : '?';
+  }
+
   function render(){
     const el=document.getElementById('goals-list');
+    renderWeeklyCheckins();
     if(!state.goals.length){el.innerHTML='<div class="empty"><div class="empty-icon">🎯</div>Nenhuma meta cadastrada ainda.</div>';return;}
     const sorted=[...state.goals].sort((a,b)=>{const r={alta:0,media:1,baixa:2};return r[a.prio]-r[b.prio];});
     el.innerHTML=sorted.map(g=>{
       const p=pct(g.saved||0,g.target||1);
       const rem=(g.target||0)-(g.saved||0);
-      const months=g.monthly>0?Math.ceil(rem/g.monthly):'?';
+      const months=getEstimatedMonths(g);
       return `<div class="goal-card" style="border-left:4px solid ${prioColor[g.prio]||'var(--border)'};">
         <div class="goal-icon">${esc(g.icon||'🎯')}</div>
         <div class="goal-body" style="flex:1;">
@@ -77,6 +131,36 @@
     if(!name){toast('Informe o nome da meta.','warn');return;}
     const data={name,icon:document.getElementById('m-icon').value,target:parseFloat(document.getElementById('m-target').value)||0,saved:parseFloat(document.getElementById('m-saved').value)||0,monthly:parseFloat(document.getElementById('m-monthly').value)||0,prio:document.getElementById('m-prio').value,desc:document.getElementById('m-desc').value.trim()};
     try{await actionAddGoal(data);['m-name','m-target','m-saved','m-monthly','m-desc'].forEach(id=>document.getElementById(id).value='');toast('✅ Meta adicionada!','ok');render();}catch(e){toast('Erro: '+e.message,'danger');}
+  };
+  window.addGoalLadder=async()=>{
+    const baseName=document.getElementById('m-name').value.trim();
+    const target=parseFloat(document.getElementById('m-target').value)||0;
+    if(!baseName || !target){toast('Informe nome e valor alvo para criar escada.','warn');return;}
+    const icon=document.getElementById('m-icon').value;
+    const monthly=parseFloat(document.getElementById('m-monthly').value)||0;
+    const desc=document.getElementById('m-desc').value.trim();
+    const ladder=[
+      { suffix:'Pequena', factor:0.2, prio:'alta' },
+      { suffix:'Média', factor:0.55, prio:'media' },
+      { suffix:'Principal', factor:1, prio:'baixa' }
+    ];
+    try{
+      for (const step of ladder) {
+        await actionAddGoal({
+          name:`${baseName} · ${step.suffix}`,
+          icon,
+          target:target * step.factor,
+          saved:0,
+          monthly,
+          prio:step.prio,
+          desc:desc || `Meta em escada (${step.suffix.toLowerCase()}).`
+        });
+      }
+      toast('✅ Escada de metas criada.', 'ok');
+      render();
+    } catch(e) {
+      toast('Erro: '+e.message,'danger');
+    }
   };
   window.doDel=async(id)=>{if(!confirm('Remover meta?'))return;await actionDeleteGoal(id);toast('Removido.','ok');render();};
   initAuth(user=>{document.getElementById('loading-screen').style.display='none';document.getElementById('app-shell').style.display='block';document.getElementById('user-name').textContent=state.profile?.name||user.displayName||'';document.getElementById('user-photo').src=user.photoURL||'';render();},()=>{window.location.href='../index.html';});

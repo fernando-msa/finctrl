@@ -14,6 +14,11 @@ function getMissions() {
       id: 'review_plan',
       title: 'Revisar plano da semana',
       impact: 'Mantém foco e reduz decisões impulsivas.'
+    },
+    {
+      id: 'first_win_10m',
+      title: 'Primeira vitória em 10 minutos',
+      impact: 'Escolha 1 gasto para cortar hoje e registre no app para ganhar tração.'
     }
   ];
 
