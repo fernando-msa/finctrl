@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main", "master", "work"]
+
+jobs:
+  syntax-and-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: JavaScript syntax check (node --check)
+        run: |
+          set -euo pipefail
+          files=$(find . -type f -name "*.js" -not -path "./.git/*")
+          for f in $files; do
+            node --check "$f"
+          done
+
+      - name: Validate required app files
+        run: |
+          test -f index.html
+          test -f js/firebase.js
+          test -f js/app.js
+          test -f pages/plano.html
+          test -f pages/diagnostico.html
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          VERSION="8.24.2"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+
+      - name: Gitleaks scan (directory mode)
+        run: |
+          set -euo pipefail
+          gitleaks dir . --redact --exit-code 1 --config .gitleaks.toml

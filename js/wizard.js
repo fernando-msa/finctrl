@@ -8,7 +8,8 @@ const wizardDraft = {
   essentials: 0,
   debtStress: 'alto',
   focus: 'equilibrio',
-  method: 'avalanche'
+  method: 'avalanche',
+  profileType: 'quitar_dividas'
 };
 
 const BRL = (value = 0) => Number(value || 0).toLocaleString('pt-BR', {
@@ -73,6 +74,7 @@ function ensureModal() {
       debtStress: wizardDraft.debtStress,
       focus: wizardDraft.focus,
       method: wizardDraft.method,
+      profileType: wizardDraft.profileType,
       onboardingDone: true,
       name: state.profile?.name || ''
     });
@@ -104,6 +106,7 @@ function persistCurrentStep(modal) {
   if (currentStep === 4) {
     wizardDraft.focus = modal.querySelector('input[name="wiz-focus"]:checked')?.value || 'equilibrio';
     wizardDraft.method = modal.querySelector('input[name="wiz-method"]:checked')?.value || 'avalanche';
+    wizardDraft.profileType = modal.querySelector('input[name="wiz-profile"]:checked')?.value || 'quitar_dividas';
   }
 }
 
@@ -118,6 +121,9 @@ function summaryHtml() {
   if (wizardDraft.focus === 'quitar') recommendations.push('💳 Monte meta de quitação de curto prazo (30-90 dias).');
   if (wizardDraft.focus === 'cortar') recommendations.push('✂️ Defina teto por categoria de gasto (alimentação/transporte).');
   if (wizardDraft.focus === 'equilibrio') recommendations.push('⚖️ Combine renegociação + pequenos cortes + reserva mínima.');
+  if (wizardDraft.profileType === 'organizar_familia') recommendations.push('👨‍👩‍👧‍👦 Crie orçamento por responsável para visibilidade da família.');
+  if (wizardDraft.profileType === 'autonomo_renda_variavel') recommendations.push('📉 Trabalhe com meta de reserva por faixa de renda variável.');
+  if (wizardDraft.profileType === 'quitar_dividas') recommendations.push('🎯 Foque em 1 dívida por vez e celebre cada quitação parcial.');
   recommendations.push(`🧭 Método sugerido agora: ${methodName}.`);
 
   return `
@@ -228,6 +234,20 @@ function renderStep(modal) {
           </div>
         </div>
       </div>
+      <div style="margin-top:12px;">
+        <div style="font-size:12px;color:#bdbdbd;margin-bottom:8px;">Perfil financeiro</div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(120px,1fr));gap:8px;">
+          ${[
+    ['quitar_dividas', 'Quitar dívidas'],
+    ['organizar_familia', 'Organizar família'],
+    ['autonomo_renda_variavel', 'Autônomo (renda variável)']
+  ].map(([value, label]) => `
+            <label style="display:flex;gap:8px;align-items:center;background:#171717;padding:10px;border:1px solid #2a2a2a;border-radius:8px;">
+              <input type="radio" name="wiz-profile" value="${value}" ${wizardDraft.profileType === value ? 'checked' : ''}>
+              <span style="font-size:13px;">${label}</span>
+            </label>`).join('')}
+        </div>
+      </div>
     `;
   }
 
@@ -244,6 +264,7 @@ export function openWizard() {
   wizardDraft.debtStress = state.profile?.debtStress || 'alto';
   wizardDraft.focus = state.profile?.focus || 'equilibrio';
   wizardDraft.method = state.profile?.method || 'avalanche';
+  wizardDraft.profileType = state.profile?.profileType || 'quitar_dividas';
   currentStep = 1;
   renderStep(modal);
   modal.style.display = 'flex';

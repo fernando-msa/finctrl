@@ -748,7 +748,7 @@ export function initAuth(onIn, onOut) {
 }
 
 console.info('[FinCtrl] Firebase inicializado:', {
-  app: app.name,
+  app: typeof app !== 'undefined' ? app?.name : 'indisponível',
   projectId: firebaseConfig.projectId
 });
 
