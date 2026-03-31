@@ -64,9 +64,18 @@ fincrtl/
 
 ---
 
-## PASSO 2 — Configurar `js/firebase.js`
+## PASSO 2 — Configurar Firebase
 
-Preencha `js/firebase.js` com os dados do seu próprio projeto Firebase.
+O app já possui configuração pública padrão para subir em produção.
+
+Se você quiser sobrescrever para outro projeto (dev/staging), use:
+
+1. Copie o arquivo de exemplo:
+   ```bash
+   cp js/firebase-config.example.js js/firebase-config.local.js
+   ```
+2. Carregue esse arquivo antes dos módulos nas páginas em que estiver desenvolvendo localmente.
+3. O arquivo `js/firebase-config.local.js` está no `.gitignore` e **não deve ser commitado**.
 
 > ⚠️ **Não publique neste README, issues ou PRs**: `serviceAccountKey.json`, tokens, webhooks, senhas ou qualquer segredo.
 >
@@ -94,13 +103,13 @@ Foi adicionada uma API serverless em `api/slack-log.js`, acionada automaticament
 
 1. Crie um **Incoming Webhook** no Slack do canal desejado.
 2. No Vercel, configure a variável de ambiente:
-   - `SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...`
+   - `SLACK_WEBHOOK_URL=https://hooks.slack.com/services/<seu-webhook>`
 3. Faça novo deploy.
 
 Pronto: erros e feedbacks enviados via `logEvent` passam a ser encaminhados para o Slack.
 
 > Alternativa (sem webhook): use **Slack Bot Token** com:
-> - `SLACK_BOT_TOKEN=xoxb-...`
+> - `SLACK_BOT_TOKEN=<seu-bot-token>`
 > - `SLACK_CHANNEL_ID=C0123456789`
 >
 > O endpoint tenta webhook primeiro e, se falhar, usa bot token como fallback.
@@ -166,6 +175,17 @@ python -m http.server 8080
 # Ou com Node.js
 npx serve .
 ```
+
+---
+
+## CI com GitHub Actions
+
+Foi adicionado workflow em `.github/workflows/ci.yml` com:
+- checagem de sintaxe JS (`node --check`);
+- validação de arquivos essenciais do app;
+- varredura de segredos com Gitleaks.
+
+O scanner usa a configuração versionada em `.gitleaks.toml` para reduzir falsos positivos de exemplos/documentação.
 
 ---
 
