@@ -83,6 +83,7 @@
 
   function getPrevMonthMap() {
     const d = new Date();
+    d.setDate(1);
     d.setMonth(d.getMonth() - 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     try {
@@ -127,6 +128,11 @@
     const tb=document.getElementById('exp-tbody');
     const total=state.expenses.reduce((s,e)=>s+e.val,0);
     const prevMap = getPrevMonthMap();
+    const currentByCat = state.expenses.reduce((acc, item) => {
+      const cat = item.cat || 'outro';
+      acc[cat] = (acc[cat] || 0) + Number(item.val || 0);
+      return acc;
+    }, {});
     document.getElementById('exp-total').textContent='Total: '+fmt(total)+'/mês';
     renderEnvelope();
     persistMonthlySnapshot();
@@ -137,10 +143,11 @@
       <td style="color:var(--muted);font-size:0.72rem;">${esc(e.obs||'—')}
       ${prevMap[e.cat] ? (() => {
         const prev = Number(prevMap[e.cat] || 0);
-        const diff = prev ? ((Number(e.val || 0) - prev) / prev) * 100 : 0;
+        const currentTotal = Number(currentByCat[e.cat] || 0);
+        const diff = prev ? ((currentTotal - prev) / prev) * 100 : 0;
         const tone = diff > 35 ? 'tag-red' : diff > 10 ? 'tag-yellow' : 'tag-green';
         const label = diff > 35 ? 'Anômalo' : 'Variação';
-        return `<br><span class="tag ${tone}">${label}: ${diff.toFixed(0)}%</span>`;
+        return `<br><span class="tag ${tone}">${label} da categoria: ${diff.toFixed(0)}%</span>`;
       })() : ''}
       </td>
       <td><div style="display:flex;gap:4px;">
