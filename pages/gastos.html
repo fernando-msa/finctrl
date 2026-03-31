@@ -41,6 +41,7 @@
       </div>
     </div>
     <div class="sec-head">Gastos Cadastrados <span class="pill" id="exp-total"></span></div>
+    <div id="envelope-box" style="margin-bottom:10px;"></div>
     <div class="tbl-wrap">
       <table><thead><tr><th>Descrição</th><th>Categoria</th><th>Pessoa</th><th>Valor/mês</th><th>Obs.</th><th></th></tr></thead>
       <tbody id="exp-tbody"></tbody></table>
@@ -52,6 +53,11 @@
   import { initAuth, state, fmt, esc, CAT_LABELS, actionAddExpense, actionUpdateExpense, actionDeleteExpense, toast, handleLogout as _out } from '../js/app.js';
   window.handleLogout = _out;
   let editingExpenseId = null;
+  const monthKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+  const histKey = () => `fincrtl.expense.hist.${state.user?.uid || 'anon'}`;
 
   function clearExpForm() {
     ['g-name','g-val','g-person','g-obs'].forEach((id)=>document.getElementById(id).value='');
@@ -63,15 +69,87 @@
     document.getElementById('exp-cancel-btn').style.display = isEditing ? '' : 'none';
   }
 
+  function persistMonthlySnapshot() {
+    const byCat = state.expenses.reduce((acc, item) => {
+      const cat = item.cat || 'outro';
+      acc[cat] = (acc[cat] || 0) + Number(item.val || 0);
+      return acc;
+    }, {});
+    let hist = {};
+    try { hist = JSON.parse(localStorage.getItem(histKey()) || '{}'); } catch { hist = {}; }
+    hist[monthKey()] = byCat;
+    localStorage.setItem(histKey(), JSON.stringify(hist));
+  }
+
+  function getPrevMonthMap() {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    try {
+      const hist = JSON.parse(localStorage.getItem(histKey()) || '{}');
+      return hist[key] || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function renderEnvelope() {
+    const income = Number(state.profile?.income || 0);
+    const total = state.expenses.reduce((s,e)=>s+Number(e.val||0),0);
+    const reserve = Number(state.profile?.emergency || 0);
+    const wants = Math.max(0, total - reserve);
+    const p = { need: 50, want: 30, save: 20 };
+    const recNeed = income * (p.need / 100);
+    const recWant = income * (p.want / 100);
+    const recSave = income * (p.save / 100);
+    const lines = [
+      { label: 'Necessidades', actual: total, rec: recNeed },
+      { label: 'Desejos', actual: wants, rec: recWant },
+      { label: 'Poupança/Reserva', actual: reserve, rec: recSave }
+    ];
+    const statusColor = (a, r) => (a <= r ? 'var(--green)' : a <= r * 1.15 ? 'var(--yellow)' : 'var(--red)');
+    document.getElementById('envelope-box').innerHTML = `
+      <div class="plan-item">
+        <div class="plan-body">
+          <h3>🧮 Envelope 50-30-20 (referência)</h3>
+          ${income ? lines.map((line) => `
+            <div style="font-size:.78rem;margin:.45rem 0;">
+              ${line.label}: <strong>${fmt(line.actual)}</strong> / alvo <strong>${fmt(line.rec)}</strong>
+              <span style="color:${statusColor(line.actual, line.rec)};">(${line.actual <= line.rec ? 'dentro' : 'acima'})</span>
+            </div>
+          `).join('') : '<p style="font-size:.78rem;">Defina sua renda no onboarding para habilitar o envelope.</p>'}
+        </div>
+      </div>
+    `;
+  }
+
   function render(){
     const tb=document.getElementById('exp-tbody');
     const total=state.expenses.reduce((s,e)=>s+e.val,0);
+    const prevMap = getPrevMonthMap();
+    const currentByCat = state.expenses.reduce((acc, item) => {
+      const cat = item.cat || 'outro';
+      acc[cat] = (acc[cat] || 0) + Number(item.val || 0);
+      return acc;
+    }, {});
     document.getElementById('exp-total').textContent='Total: '+fmt(total)+'/mês';
+    renderEnvelope();
+    persistMonthlySnapshot();
     if(!state.expenses.length){tb.innerHTML='<tr><td colspan="6" class="empty">Nenhum gasto cadastrado.</td></tr>';return;}
     tb.innerHTML=state.expenses.map(e=>`<tr>
       <td><strong>${esc(e.name)}</strong></td><td>${esc(CAT_LABELS[e.cat]||e.cat)}</td>
       <td>${esc(e.person||'—')}</td><td class="r num">${fmt(e.val)}</td>
-      <td style="color:var(--muted);font-size:0.72rem;">${esc(e.obs||'—')}</td>
+      <td style="color:var(--muted);font-size:0.72rem;">${esc(e.obs||'—')}
+      ${prevMap[e.cat] ? (() => {
+        const prev = Number(prevMap[e.cat] || 0);
+        const currentTotal = Number(currentByCat[e.cat] || 0);
+        const diff = prev ? ((currentTotal - prev) / prev) * 100 : 0;
+        const tone = diff > 35 ? 'tag-red' : diff > 10 ? 'tag-yellow' : 'tag-green';
+        const label = diff > 35 ? 'Anômalo' : 'Variação';
+        return `<br><span class="tag ${tone}">${label} da categoria: ${diff.toFixed(0)}%</span>`;
+      })() : ''}
+      </td>
       <td><div style="display:flex;gap:4px;">
         <button class="ib" title="Editar" onclick="doEditExp('${e.id}')">✎</button>
         <button class="ib" onclick="doDel('${e.id}')">✕</button>
