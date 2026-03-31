@@ -44,6 +44,7 @@
         <div class="fg"><label>Parcela / mês (R$)</label><input id="d-monthly" type="number" placeholder="500"></div>
         <div class="fg"><label>Juros / mês (%)</label><input id="d-rate" type="number" placeholder="3.5" step="0.1"></div>
         <div class="fg"><label>Parcelas restantes</label><input id="d-parcels" type="number" placeholder="12"></div>
+        <div class="fg"><label>Dia de vencimento</label><input id="d-due-day" type="number" min="1" max="31" placeholder="10"></div>
         <div class="fg"><label>Status</label>
           <select id="d-status">
             <option value="em_dia">Em dia</option>
@@ -64,10 +65,11 @@
     <div class="tbl-wrap">
       <table><thead><tr>
         <th>Credor</th><th>Tipo</th><th>Total</th><th>Parcela/mês</th>
-        <th>Juros/mês</th><th>Parc.</th><th>Status</th><th>Alerta</th><th>Obs.</th><th></th>
+        <th>Juros/mês</th><th>Parc.</th><th>Status</th><th>Alerta</th><th>Renegociação</th><th>Obs.</th><th></th>
       </tr></thead>
       <tbody id="debt-tbody"></tbody></table>
     </div>
+    <div id="method-reco" style="margin-top:12px;"></div>
   </div>
 </div>
 
@@ -78,7 +80,7 @@
   let editingDebtId = null;
 
   function clearDebtForm() {
-    ['d-name','d-total','d-monthly','d-rate','d-parcels','d-delay','d-obs'].forEach((id) => {
+    ['d-name','d-total','d-monthly','d-rate','d-parcels','d-delay','d-obs', 'd-due-day'].forEach((id) => {
       document.getElementById(id).value = '';
     });
     document.getElementById('d-status').value = 'em_dia';
@@ -92,6 +94,44 @@
     cancel.style.display = isEditing ? '' : 'none';
   }
 
+  function dueRisk(debt) {
+    const dueDay = Number(debt.dueDay || 0);
+    if (!dueDay) return { cls: 'tag-gray', label: 'Sem venc.' };
+    const now = new Date();
+    const today = now.getDate();
+    const daysLeft = dueDay - today;
+    if (debt.status === 'atrasada' || daysLeft < 0) return { cls: 'tag-red', label: `Vencida (${Math.abs(daysLeft)}d)` };
+    if (daysLeft <= 3) return { cls: 'tag-orange', label: `Vence em ${daysLeft}d` };
+    return { cls: 'tag-green', label: `Vence dia ${dueDay}` };
+  }
+
+  function renegotiationHint(debt) {
+    const rate = Number(debt.rate || 0);
+    const monthly = Number(debt.monthly || 0);
+    const total = Number(debt.total || 0);
+    if (!total || !monthly) return 'Simulação indisponível';
+    const newRate = Math.max(0, rate * 0.65);
+    const newMonthly = monthly * 0.82;
+    const oldMonths = Math.ceil(total / monthly);
+    const newMonths = Math.ceil(total / Math.max(newMonthly, 1));
+    const oldCost = monthly * oldMonths;
+    const newCost = newMonthly * newMonths;
+    const diff = oldCost - newCost;
+    return `Taxa ~${newRate.toFixed(1)}% e parcela ${fmt(newMonthly)} · economia estimada ${fmt(Math.max(0, diff))}`;
+  }
+
+  function renderMethodReco(sorted) {
+    const avgRate = sorted.length ? sorted.reduce((s, d) => s + Number(d.rate || 0), 0) / sorted.length : 0;
+    const hasTinyBalances = sorted.filter((d) => Number(d.total || 0) < 2000).length >= 2;
+    const method = avgRate >= 7 ? 'Avalanche' : hasTinyBalances ? 'Bola de Neve' : 'Avalanche';
+    const reason = method === 'Avalanche'
+      ? 'juros médios altos: priorizar maior taxa reduz custo total.'
+      : 'várias dívidas pequenas: quitações rápidas aumentam motivação.';
+    document.getElementById('method-reco').innerHTML = sorted.length
+      ? `<div class="alert info"><strong>Método sugerido: ${method}</strong> — ${reason}</div>`
+      : '';
+  }
+
   function render() {
     const tbody = document.getElementById('debt-tbody');
     const sorted = [...state.debts].sort((a,b)=>{
@@ -100,11 +140,12 @@
       return b.rate-a.rate;
     });
     document.getElementById('debt-count').textContent = state.debts.filter(d=>!d.paid).length + ' ativa(s)';
-    if(!sorted.length){tbody.innerHTML='<tr><td colspan="10" class="empty">Nenhuma dívida cadastrada.</td></tr>';return;}
+    if(!sorted.length){tbody.innerHTML='<tr><td colspan="11" class="empty">Nenhuma dívida cadastrada.</td></tr>';renderMethodReco(sorted);return;}
     const stMap = {em_dia:['tag-green','Em dia'],atrasada:['tag-red','Atrasada'],negociando:['tag-yellow','Negociando']};
     tbody.innerHTML = sorted.map(d=>{
       const [stCls,stLbl] = stMap[d.status]||['tag-gray',d.status];
       const fine = d.status==='atrasada' && d.delay ? `· multa ~${fmt(d.total*0.02*d.delay)}` : '';
+      const risk = dueRisk(d);
       const alertHtml = d.status==='atrasada'
         ? `<span class="tag tag-red">⚠ ${d.delay||0}m atraso ${fine}</span>`
         : d.rate>=8 ? `<span class="tag tag-orange">Juros altos</span>` : `<span class="tag tag-green">OK</span>`;
@@ -116,7 +157,8 @@
         <td class="r">${d.rate?d.rate+'%':'—'}</td>
         <td class="r">${d.parcels||'—'}</td>
         <td><span class="tag ${stCls}">${esc(stLbl)}</span></td>
-        <td>${alertHtml}</td>
+        <td>${alertHtml}<br><span class="tag ${risk.cls}" style="margin-top:4px;display:inline-block;">${risk.label}</span></td>
+        <td style="font-size:0.72rem;color:var(--muted);max-width:200px;">${renegotiationHint(d)}</td>
         <td style="color:var(--muted);font-size:0.72rem;">${esc(d.obs||'—')}</td>
         <td><div style="display:flex;gap:4px;">
           <button class="ib" title="Editar" onclick="doEdit('${d.id}')">✎</button>
@@ -125,6 +167,7 @@
         </div></td>
       </tr>`;
     }).join('');
+    renderMethodReco(sorted);
   }
 
   window.doSaveDebt = async () => {
@@ -137,6 +180,7 @@
       monthly: parseFloat(document.getElementById('d-monthly').value)||0,
       rate:    parseFloat(document.getElementById('d-rate').value)||0,
       parcels: parseInt(document.getElementById('d-parcels').value)||0,
+      dueDay: parseInt(document.getElementById('d-due-day').value)||10,
       status:  document.getElementById('d-status').value,
       delay:   parseInt(document.getElementById('d-delay').value)||0,
       obs:     document.getElementById('d-obs').value.trim(),
@@ -166,6 +210,7 @@
     document.getElementById('d-monthly').value = debt.monthly || '';
     document.getElementById('d-rate').value = debt.rate || '';
     document.getElementById('d-parcels').value = debt.parcels || '';
+    document.getElementById('d-due-day').value = debt.dueDay || 10;
     document.getElementById('d-status').value = debt.status || 'em_dia';
     document.getElementById('d-delay').value = debt.delay || 0;
     document.getElementById('d-obs').value = debt.obs || '';

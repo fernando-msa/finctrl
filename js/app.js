@@ -179,6 +179,37 @@ function applyAdminNavVisibility() {
   });
 }
 
+function compactNavTabs(nav) {
+  if (!nav || nav.dataset.compactReady === '1') return;
+  nav.dataset.compactReady = '1';
+  const tabs = Array.from(nav.querySelectorAll('.nav-tab'));
+  if (tabs.length <= 5) return;
+  const active = tabs.find((tab) => tab.classList.contains('active'));
+  const keepLabels = ['Visão Geral', 'Dívidas', 'Gastos', 'Plano'];
+  const keep = tabs.filter((tab) => keepLabels.some((label) => tab.textContent.includes(label)));
+  if (active && !keep.includes(active)) keep.push(active);
+
+  const uniqueKeep = Array.from(new Set(keep));
+  const overflow = tabs.filter((tab) => !uniqueKeep.includes(tab));
+  if (!overflow.length) return;
+
+  overflow.forEach((tab) => tab.remove());
+
+  const more = document.createElement('details');
+  more.className = 'nav-more';
+  const activeOverflow = overflow.some((tab) => tab.classList.contains('active'));
+  more.innerHTML = `
+    <summary class="nav-tab ${activeOverflow ? 'active' : ''}">➕ Mais</summary>
+    <div class="nav-more-list"></div>
+  `;
+  const list = more.querySelector('.nav-more-list');
+  overflow.forEach((tab) => {
+    tab.classList.remove('active');
+    list.appendChild(tab);
+  });
+  nav.appendChild(more);
+}
+
 function initSidebarLayout() {
   const header = document.getElementById('app-header');
   const nav = header?.querySelector('.nav-tabs');
@@ -191,6 +222,7 @@ function initSidebarLayout() {
   nav.querySelectorAll('.nav-tab').forEach((tab) => {
     if (!tab.title) tab.title = tab.textContent?.trim() || 'Guia';
   });
+  compactNavTabs(nav);
 
   const toggle = document.createElement('button');
   toggle.type = 'button';
@@ -345,7 +377,12 @@ function renderReleaseModal() {
   `;
   document.body.appendChild(modal);
 
-  modal.querySelector('#release-list').innerHTML = RELEASE_NOTES.map((item) => `
+  const notes = RELEASE_NOTES.length ? RELEASE_NOTES : [{
+    version: APP_VERSION,
+    date: new Date().toISOString().slice(0, 10),
+    notes: ['Sem notas de versão publicadas para esta atualização.']
+  }];
+  modal.querySelector('#release-list').innerHTML = notes.map((item) => `
     <div style="border:1px solid #2f3340;border-radius:10px;padding:.65rem .75rem;">
       <div style="font-weight:700;">${item.version} <span class="mini-note">· ${item.date}</span></div>
       <ul style="margin:.5rem 0 .2rem;padding-left:1.1rem;">
@@ -360,17 +397,72 @@ function renderReleaseModal() {
   return modal;
 }
 
+function renderAssistantModal() {
+  let modal = document.getElementById('assistant-modal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'assistant-modal';
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3 style="margin:.1rem 0;">Assistente FinCtrl</h3>
+          <div class="mini-note">Ajuda rápida e apoio contínuo em qualquer tela.</div>
+        </div>
+        <button class="icon-action" id="assistant-close" title="Fechar">✕</button>
+      </div>
+      <div id="assistant-content" style="margin-top:.85rem;"></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem;">
+        <button class="btn btn-outline" data-assistant-topic="caixa">Melhorar caixa</button>
+        <button class="btn btn-outline" data-assistant-topic="dividas">Priorizar dívidas</button>
+        <button class="btn btn-outline" data-assistant-topic="gastos">Cortar gastos</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const renderTopic = (topic = 'caixa') => {
+    const free = getFreeAmount();
+    const overdue = getActiveDebts().filter((d) => d.status === 'atrasada').length;
+    const messages = {
+      caixa: `Sobra mensal atual: <strong>${fmt(free)}</strong>. ${free < 0 ? 'Ação: renegocie parcelas e reduza gastos variáveis hoje.' : 'Ação: direcione parte da sobra para dívida prioritária.'}`,
+      dividas: `${overdue} dívida(s) em atraso. Ação: regularize atrasadas antes de acelerar quitação das em dia.`,
+      gastos: `Comprometimento atual: <strong>${getCommitPct()}%</strong>. Ação: defina teto semanal para alimentação/transporte.`
+    };
+    document.getElementById('assistant-content').innerHTML = `
+      <div class="plan-item" style="margin:0;">
+        <div class="plan-body">
+          <p style="font-size:.9rem;line-height:1.6;">${messages[topic] || messages.caixa}</p>
+          <p style="margin-top:.5rem;">Se quiser, use também <strong>🆘 Suporte</strong> para falar com o time.</p>
+        </div>
+      </div>
+    `;
+  };
+
+  modal.querySelector('#assistant-close').addEventListener('click', () => { modal.style.display = 'none'; });
+  modal.addEventListener('click', (ev) => { if (ev.target === modal) modal.style.display = 'none'; });
+  modal.querySelectorAll('[data-assistant-topic]').forEach((btn) => {
+    btn.addEventListener('click', () => renderTopic(btn.dataset.assistantTopic));
+  });
+  renderTopic('caixa');
+  return modal;
+}
+
 function initSupportWidgets() {
   const header = document.getElementById('app-header');
   const chip = header?.querySelector('.user-chip');
   if (!header || !chip || header.dataset.supportReady === '1') return;
   header.dataset.supportReady = '1';
 
+  const actionsWrap = document.createElement('div');
+  actionsWrap.className = 'chip-actions';
+
   const supportBtn = document.createElement('button');
   supportBtn.type = 'button';
-  supportBtn.className = 'icon-action';
+  supportBtn.className = 'icon-action icon-action-text';
   supportBtn.title = 'Reportar feedback/erro ao suporte';
-  supportBtn.textContent = '🆘';
+  supportBtn.textContent = '🆘 Ajuda';
   supportBtn.addEventListener('click', () => {
     const modal = renderSupportModal();
     modal.style.display = 'flex';
@@ -378,16 +470,28 @@ function initSupportWidgets() {
 
   const releaseBtn = document.createElement('button');
   releaseBtn.type = 'button';
-  releaseBtn.className = 'icon-action';
+  releaseBtn.className = 'icon-action icon-action-text';
   releaseBtn.title = 'Novidades e correções por versão';
-  releaseBtn.textContent = '🆕';
+  releaseBtn.textContent = '🆕 Novidades';
   releaseBtn.addEventListener('click', () => {
     const modal = renderReleaseModal();
     modal.style.display = 'flex';
   });
 
-  chip.insertBefore(releaseBtn, chip.firstChild);
-  chip.insertBefore(supportBtn, chip.firstChild);
+  const assistantBtn = document.createElement('button');
+  assistantBtn.type = 'button';
+  assistantBtn.className = 'icon-action icon-action-text';
+  assistantBtn.title = 'Abrir assistente';
+  assistantBtn.textContent = '🤖 Assistente';
+  assistantBtn.addEventListener('click', () => {
+    const modal = renderAssistantModal();
+    modal.style.display = 'flex';
+  });
+
+  actionsWrap.appendChild(assistantBtn);
+  actionsWrap.appendChild(releaseBtn);
+  actionsWrap.appendChild(supportBtn);
+  chip.insertBefore(actionsWrap, chip.firstChild);
 }
 
 const normText = (value, max = MAX_TEXT) => String(value || '').trim().slice(0, max);
@@ -534,6 +638,7 @@ export async function actionAddDebt(data = {}) {
     monthly: normMoney(data.monthly),
     rate: normMoney(data.rate),
     parcels: normInt(data.parcels, 0),
+    dueDay: Math.max(1, Math.min(31, normInt(data.dueDay, 10))),
     status: ['em_dia', 'atrasada', 'negociando'].includes(data.status) ? data.status : 'em_dia',
     delay: normInt(data.delay, 0),
     obs: normText(data.obs, 240),
@@ -558,6 +663,7 @@ export async function actionUpdateDebt(id, data = {}) {
     monthly: normMoney(data.monthly),
     rate: normMoney(data.rate),
     parcels: normInt(data.parcels, 0),
+    dueDay: Math.max(1, Math.min(31, normInt(data.dueDay, 10))),
     status: ['em_dia', 'atrasada', 'negociando'].includes(data.status) ? data.status : 'em_dia',
     delay: normInt(data.delay, 0),
     obs: normText(data.obs, 240),

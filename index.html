@@ -98,41 +98,50 @@
 
   <!-- Page content -->
   <div class="wrap">
+    <section class="home-head">
+      <div>
+        <h1 style="margin:.1rem 0 .2rem 0;">Painel financeiro</h1>
+        <p style="margin:0;color:var(--muted);font-size:.88rem;">Visão objetiva do mês com foco em execução.</p>
+      </div>
+      <div style="display:flex;gap:.55rem;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="openWizard()">Ajustar perfil</button>
+        <button class="btn btn-dark" onclick="window.location.href='pages/plano.html'">Ver plano</button>
+      </div>
+    </section>
 
-    <!-- Renda input inline -->
-    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1rem;">
+    <!-- Renda input -->
+    <div class="form-block" style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
       <div class="fg" style="flex:1;min-width:160px;">
-        <label>Renda líquida / mês (R$)</label>
+        <label>Renda líquida / mês</label>
         <input type="number" id="income-input" placeholder="4500" oninput="updateIncome(this.value)">
       </div>
       <div class="fg" style="flex:1;min-width:160px;">
-        <label>Reserva de emergência / mês (R$)</label>
+        <label>Reserva / mês</label>
         <input type="number" id="emergency-input" placeholder="300" oninput="updateEmergency(this.value)">
       </div>
       <div style="display:flex;align-items:flex-end;">
-        <button class="btn btn-dark" onclick="saveProfileValues()">Salvar</button>
+        <button class="btn btn-dark" onclick="saveProfileValues()">Salvar dados</button>
       </div>
     </div>
 
-    <!-- Summary -->
-    <div class="sec-head">Resumo <span class="pill red" id="alert-pill">0 alertas</span></div>
-    <div class="card-grid" id="summary-cards"></div>
+    <div class="home-grid">
+      <section>
+        <div class="sec-head">Resumo do mês <span class="pill red" id="alert-pill">0 alertas</span></div>
+        <div class="card-grid" id="summary-cards"></div>
+        <div id="alerts-box"></div>
 
-    <!-- Alerts -->
-    <div id="alerts-box"></div>
+        <div class="sec-head">Próximas ações</div>
+        <div id="recommend-box" class="home-panel" style="margin-bottom:1rem;"></div>
+      </section>
 
-    <!-- Recomendações -->
-    <div class="sec-head">Plano recomendado para você</div>
-    <div id="recommend-box" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;"></div>
+      <aside>
+        <div class="sec-head">Fluxo de Caixa</div>
+        <div id="cashflow-box" class="home-panel" style="margin-bottom:1rem;"></div>
 
-    <!-- Cashflow -->
-    <div class="sec-head">Fluxo de Caixa</div>
-    <div id="cashflow-box" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;"></div>
-
-    <!-- People -->
-    <div class="sec-head">Por Pessoa</div>
-    <div id="people-box" class="people-grid"></div>
-
+        <div class="sec-head">Por Pessoa</div>
+        <div id="people-box" class="people-grid"></div>
+      </aside>
+    </div>
   </div>
 </div>
 
