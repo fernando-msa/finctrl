@@ -31,6 +31,7 @@
     </div>
 
     <div class="card-grid" id="diag-cards"></div>
+    <div id="health-score-box" style="margin-top:1rem;"></div>
 
     <div class="sec-head" style="margin-top:1.5rem;">Logs recentes</div>
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
@@ -101,13 +102,15 @@
   }
 
   function renderStats() {
+    const health = computeHealthScore();
     const cards = [
       { label: 'Usuário', val: esc(state.user?.email || '—'), sub: esc(state.user?.uid || '—'), cls: 'c-blue' },
       { label: 'Dívidas ativas', val: String(getActiveDebts().length), sub: fmt(getTotalDebt()), cls: 'c-red' },
       { label: 'Parcelas/mês', val: fmt(getTotalMonthly()), sub: getCommitPct() + '% comprometimento', cls: 'c-orange' },
       { label: 'Gastos fixos/mês', val: fmt(getTotalExp()), sub: state.expenses.length + ' gasto(s)', cls: 'c-yellow' },
       { label: 'Sobra mensal', val: fmt(Math.max(getFreeAmount(), 0)), sub: getFreeAmount() < 0 ? 'Caixa negativo' : 'Situação atual', cls: getFreeAmount() < 0 ? 'c-red' : 'c-green' },
-      { label: 'Logs carregados', val: String(logs.length), sub: 'Últimos registros', cls: 'c-purple' }
+      { label: 'Logs carregados', val: String(logs.length), sub: 'Últimos registros', cls: 'c-purple' },
+      { label: 'Score financeiro', val: `${health.score}/100`, sub: health.label, cls: health.score >= 70 ? 'c-green' : health.score >= 40 ? 'c-orange' : 'c-red' }
     ];
 
     document.getElementById('diag-cards').innerHTML = cards.map(c => `
@@ -117,6 +120,48 @@
         <div class="s-sub">${c.sub}</div>
       </div>
     `).join('');
+    renderHealthScore(health);
+  }
+
+  function computeHealthScore() {
+    const commitment = Math.max(0, Math.min(100, 100 - getCommitPct()));
+    const freeAmount = getFreeAmount();
+    const incomeBase = Number(state.profile?.income || 0);
+    const freeRatio = incomeBase > 0 ? Math.max(0, Math.min(100, Math.round((Math.max(freeAmount, 0) / incomeBase) * 100 * 2.5))) : 0;
+    const overdue = getActiveDebts().filter((d) => d.status === 'atrasada').length;
+    const debtQuality = Math.max(0, 100 - (overdue * 25));
+    const reserveRatio = incomeBase > 0 ? Math.max(0, Math.min(100, Math.round((Number(state.profile?.emergency || 0) / incomeBase) * 100 * 4))) : 0;
+
+    const score = Math.round(
+      (commitment * 0.35) +
+      (freeRatio * 0.25) +
+      (debtQuality * 0.25) +
+      (reserveRatio * 0.15)
+    );
+
+    const nextSteps = [];
+    if (freeAmount <= 0) nextSteps.push('Ajuste gastos fixos para recuperar sobra mensal positiva.');
+    if (overdue > 0) nextSteps.push('Priorize regularização das dívidas atrasadas nesta semana.');
+    if (getCommitPct() > 70) nextSteps.push('Negocie taxa/prazo para reduzir comprometimento de renda.');
+    if (nextSteps.length < 3) nextSteps.push('Mantenha aportes mensais em meta prioritária para consistência.');
+    if (nextSteps.length < 3) nextSteps.push('Revise o plano 2x por semana para não perder tração.');
+
+    const label = score >= 70 ? 'Saudável' : score >= 40 ? 'Atenção' : 'Crítico';
+    return { score, label, nextSteps: nextSteps.slice(0, 3) };
+  }
+
+  function renderHealthScore(health) {
+    document.getElementById('health-score-box').innerHTML = `
+      <div class="plan-item">
+        <div class="plan-body">
+          <h3>📈 Score de Saúde Financeira: <span class="go">${health.score}/100</span> · ${health.label}</h3>
+          <p style="margin:.4rem 0 .6rem 0;">Próximos 3 passos recomendados:</p>
+          <ol style="margin:.1rem 0 .3rem 1rem;line-height:1.6;">
+            ${health.nextSteps.map((step) => `<li>${esc(step)}</li>`).join('')}
+          </ol>
+        </div>
+      </div>
+    `;
   }
 
   function renderLogs() {

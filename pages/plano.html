@@ -40,6 +40,9 @@
     <div class="sec-head" style="margin-top:1.5rem;">Dicas Estratégicas</div>
     <div id="tips-box"></div>
 
+    <div class="sec-head" style="margin-top:1.5rem;">Missões da Semana</div>
+    <div id="missions-box"></div>
+
   </div>
 </div>
 <script type="module">
@@ -48,6 +51,85 @@
   window.handleLogout = _out;
 
   let method = 'avalanche';
+  const missionKey = () => `fincrtl.missions.${state.user?.uid || 'anon'}`;
+
+  function getMissions() {
+    const extra = Math.max(getFreeAmount(), 0);
+    const topDebt = getSortedDebts()[0];
+    const topGoal = state.goals.find((g) => g.prio === 'alta') || state.goals[0];
+    const missions = [
+      {
+        id: 'review_plan',
+        title: 'Revisar plano da semana',
+        impact: 'Mantém foco e reduz decisões impulsivas.'
+      }
+    ];
+    if (topDebt) {
+      missions.push({
+        id: `debt_${topDebt.id}`,
+        title: `Aplicar sobra na dívida "${topDebt.name}"`,
+        impact: extra > 0 ? `Impacto estimado: até ${fmt(extra)}/mês na dívida prioritária.` : 'Defina ao menos um valor extra para amortização.'
+      });
+    }
+    if (topGoal) {
+      missions.push({
+        id: `goal_${topGoal.id}`,
+        title: `Aportar na meta "${topGoal.name}"`,
+        impact: 'Mantém consistência e melhora retenção do plano.'
+      });
+    }
+    if (!missions[2]) {
+      missions.push({
+        id: 'cut_expense',
+        title: 'Reduzir 1 gasto variável esta semana',
+        impact: 'Pequenas reduções recorrentes liberam caixa no mês.'
+      });
+    }
+    return missions.slice(0, 3);
+  }
+
+  function readMissionState() {
+    try {
+      return JSON.parse(localStorage.getItem(missionKey()) || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function writeMissionState(data) {
+    localStorage.setItem(missionKey(), JSON.stringify(data));
+  }
+
+  function renderMissions() {
+    const missions = getMissions();
+    const doneMap = readMissionState();
+    const doneCount = missions.filter((m) => doneMap[m.id]).length;
+    const progress = pct(doneCount, missions.length);
+    const items = missions.map((m) => `
+      <label class="plan-item" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;">
+        <input type="checkbox" data-mission-id="${m.id}" ${doneMap[m.id] ? 'checked' : ''} style="margin-top:.25rem;">
+        <div class="plan-body">
+          <h3 style="margin-bottom:.2rem;">${esc(m.title)}</h3>
+          <p>${esc(m.impact)}</p>
+        </div>
+      </label>
+    `).join('');
+
+    document.getElementById('missions-box').innerHTML = `
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">${doneCount}/${missions.length} concluídas (${progress}%)</div>
+      <div class="prog-bar" style="height:10px;margin-bottom:.85rem;"><div class="prog-fill" style="width:${progress}%;"></div></div>
+      ${items}
+    `;
+
+    document.querySelectorAll('[data-mission-id]').forEach((input) => {
+      input.addEventListener('change', (ev) => {
+        const map = readMissionState();
+        map[ev.target.dataset.missionId] = ev.target.checked;
+        writeMissionState(map);
+        renderMissions();
+      });
+    });
+  }
 
   window.setMethod = (m) => {
     method = m;
@@ -132,6 +214,7 @@
       if (top) tips.push(`🎯 <strong>Meta prioritária:</strong> "${esc(top.name)}" — R$ ${fmt(top.target)}. Ao quitar a 1ª dívida, redirecione a parcela liberada para essa meta.`);
     }
     document.getElementById('tips-box').innerHTML = tips.map(t=>`<div class="plan-item"><div class="plan-body"><p>${t}</p></div></div>`).join('');
+    renderMissions();
   }
 
   initAuth(user=>{
