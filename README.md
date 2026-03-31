@@ -64,9 +64,16 @@ fincrtl/
 
 ---
 
-## PASSO 2 — Configurar `js/firebase.js`
+## PASSO 2 — Configurar Firebase sem expor chave no repositório
 
-Preencha `js/firebase.js` com os dados do seu próprio projeto Firebase.
+Não coloque credenciais reais dentro de `js/firebase.js`.
+
+1. Copie o arquivo de exemplo:
+   ```bash
+   cp js/firebase-config.example.js js/firebase-config.local.js
+   ```
+2. Preencha o `window.__FINCTRL_FIREBASE_CONFIG__` com os dados do seu projeto.
+3. O arquivo `js/firebase-config.local.js` já está no `.gitignore` e **não deve ser commitado**.
 
 > ⚠️ **Não publique neste README, issues ou PRs**: `serviceAccountKey.json`, tokens, webhooks, senhas ou qualquer segredo.
 >
