@@ -4,17 +4,25 @@ import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.5/firebas
 import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 import { getAnalytics, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js';
 
-// Configuração do projeto FinCtrl (frontend)
-const firebaseConfig = {
-  apiKey: 'AIzaSyDnqqfvrAJdEJFzDNjt4gohg6h63unL8g4',
-  authDomain: 'fincrtl-3e976.firebaseapp.com',
-  projectId: 'fincrtl-3e976',
-  storageBucket: 'fincrtl-3e976.firebasestorage.app',
-  messagingSenderId: '1052094135775',
-  appId: '1:1052094135775:web:d25f0dd40c5d992437186a',
-  measurementId: 'G-BLK1Q2494Z',
-  databaseURL: 'https://fincrtl-3e976-default-rtdb.firebaseio.com'
+// Segurança: nunca commitar chaves reais de ambiente.
+// Configure o objeto global `window.__FINCTRL_FIREBASE_CONFIG__`
+// (ver `js/firebase-config.example.js`).
+const firebaseConfig = globalThis.__FINCTRL_FIREBASE_CONFIG__ || {
+  apiKey: '',
+  authDomain: '',
+  projectId: '',
+  storageBucket: '',
+  messagingSenderId: '',
+  appId: '',
+  measurementId: '',
+  databaseURL: ''
 };
+
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.appId) {
+  throw new Error(
+    'Firebase não configurado. Defina window.__FINCTRL_FIREBASE_CONFIG__ antes de carregar o app.'
+  );
+}
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
