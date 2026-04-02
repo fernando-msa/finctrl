@@ -6,23 +6,64 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasOwnerUidInWrite() {
+      return request.resource.data.ownerUid == request.auth.uid;
+    }
 
     // Logs globais de diagnóstico (somente dono do log)
     match /logs/{logId} {
-      allow create: if request.auth != null
+      allow create: if isSignedIn()
                     && request.resource.data.uid == request.auth.uid;
-      allow read: if request.auth != null
+      allow read: if isSignedIn()
                   && resource.data.uid == request.auth.uid;
       allow update, delete: if false;
     }
 
     // Cada usuário só acessa seus próprios dados
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+                            && hasOwnerUidInWrite()
+                            && request.resource.data.keys().hasAll(['ownerUid']);
+      allow delete: if isOwner(userId);
 
-      // Subcoleções: debts, expenses, fgts, goals, logs
-      match /{collection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /debts/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
+        allow delete: if isOwner(userId);
+      }
+
+      match /expenses/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
+        allow delete: if isOwner(userId);
+      }
+
+      match /fgts/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
+        allow delete: if isOwner(userId);
+      }
+
+      match /goals/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
+        allow delete: if isOwner(userId);
+      }
+
+      match /logs/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
       }
     }
   }

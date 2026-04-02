@@ -47,8 +47,17 @@ export const state = {
 const ADMIN_EMAILS = []; // Ex: ['admin@seudominio.com']
 const ADMIN_ACCESS_MODE = 'allowlist'; // 'allowlist' | 'all-authenticated'
 const MAX_TEXT = 180;
-const APP_VERSION = 'v1.5.0';
+const APP_VERSION = 'v1.6.0';
 const RELEASE_NOTES = [
+  {
+    version: 'v1.6.0',
+    date: '2026-04-02',
+    notes: [
+      'Dashboard com gráfico Chart.js para leitura rápida do mês.',
+      'Exportação da visão geral em PDF e Excel.',
+      'Reforço de isolamento multiusuário com validação de ownerUid.'
+    ]
+  },
   {
     version: 'v1.5.0',
     date: '2026-03-29',
@@ -95,6 +104,7 @@ export const pct = (a = 0, b = 1) => {
 const uidPath = () => doc(db, 'users', state.user.uid);
 const collPath = (name) => collection(db, 'users', state.user.uid, name);
 const itemPath = (name, id) => doc(db, 'users', state.user.uid, name, id);
+const ownerUid = () => state.user?.uid || null;
 
 async function logEvent(level, message, payload = {}) {
   const data = {
@@ -558,6 +568,7 @@ async function loadUserData(user) {
     };
     await setDoc(profileRef, {
       ...state.profile,
+      ownerUid: user.uid,
       email: user.email || '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -588,6 +599,7 @@ export async function actionSaveProfile(partial = {}) {
 
   await setDoc(uidPath(), {
     ...state.profile,
+    ownerUid: ownerUid(),
     updatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -659,6 +671,7 @@ export async function actionAddDebt(data = {}) {
   const name = normText(data.name, 120);
   if (!name) throw new Error('Informe o credor.');
   const payload = {
+    ownerUid: ownerUid(),
     name,
     paid: Boolean(data.paid),
     type: normText(data.type, 60) || 'Outro',
@@ -685,6 +698,7 @@ export async function actionUpdateDebt(id, data = {}) {
   if (!name) throw new Error('Informe o credor.');
 
   const payload = {
+    ownerUid: ownerUid(),
     name,
     type: normText(data.type, 60) || 'Outro',
     total: normMoney(data.total),
@@ -712,7 +726,11 @@ export async function actionTogglePaid(id) {
   const debt = state.debts.find((d) => d.id === id);
   if (!debt) return;
   const paid = !Boolean(debt.paid);
-  await updateDoc(itemPath('debts', id), { paid, updatedAt: serverTimestamp() });
+  await updateDoc(itemPath('debts', id), {
+    ownerUid: ownerUid(),
+    paid,
+    updatedAt: serverTimestamp()
+  });
   debt.paid = paid;
 }
 
@@ -720,6 +738,7 @@ export async function actionAddExpense(data = {}) {
   const name = normText(data.name, 120);
   if (!name) throw new Error('Informe a descrição.');
   const payload = {
+    ownerUid: ownerUid(),
     name,
     cat: normText(data.cat, 40) || 'outro',
     val: normMoney(data.val),
@@ -740,6 +759,7 @@ export async function actionUpdateExpense(id, data = {}) {
   if (!name) throw new Error('Informe a descrição.');
 
   const payload = {
+    ownerUid: ownerUid(),
     name,
     cat: normText(data.cat, 40) || 'outro',
     val: normMoney(data.val),
@@ -762,6 +782,7 @@ export async function actionAddFGTS(data = {}) {
   if (!bank) throw new Error('Informe a instituição.');
   const yearNow = new Date().getFullYear();
   const payload = {
+    ownerUid: ownerUid(),
     bank,
     val: normMoney(data.val),
     fgts: normMoney(data.fgts),
@@ -787,6 +808,7 @@ export async function actionAddGoal(data = {}) {
   const target = normMoney(data.target);
   if (target <= 0) throw new Error('Valor alvo da meta deve ser maior que zero.');
   const payload = {
+    ownerUid: ownerUid(),
     name,
     icon: normText(data.icon, 10) || '🎯',
     target,

@@ -104,6 +104,8 @@
         <p style="margin:0;color:var(--muted);font-size:.88rem;">Visão objetiva do mês com foco em execução.</p>
       </div>
       <div style="display:flex;gap:.55rem;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="exportOverviewExcel()">📥 Exportar Excel</button>
+        <button class="btn btn-outline" onclick="exportOverviewPdf()">🧾 Exportar PDF</button>
         <button class="btn btn-outline" onclick="openWizard()">Ajustar perfil</button>
         <button class="btn btn-dark" onclick="window.location.href='pages/plano.html'">Ver plano</button>
       </div>
@@ -132,6 +134,10 @@
 
         <div class="sec-head">Próximas ações</div>
         <div id="recommend-box" class="home-panel" style="margin-bottom:1rem;"></div>
+        <div class="sec-head">Gráficos (Chart.js)</div>
+        <div class="home-panel">
+          <canvas id="overview-chart" height="140" aria-label="Gráfico de visão geral" role="img"></canvas>
+        </div>
       </section>
 
       <aside>
@@ -145,6 +151,9 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="./js/firebase-config.local.js"></script>
 <script type="module">
   import { initAuth, state, fmt, pct, esc, actionSaveProfile,
@@ -155,6 +164,7 @@
            handleLogout as _logout
          } from './js/app.js';
   import { openWizard, closeWizard } from './js/wizard.js';
+  let overviewChart = null;
 
   // expose to global for inline handlers
   window.handleLogin    = _login;
@@ -215,6 +225,79 @@
     await actionSaveProfile({ income: state.profile.income, emergency: state.profile.emergency });
     toast('✅ Valores salvos!', 'ok');
   };
+
+  function getOverviewRows() {
+    const inc = income();
+    const tm = getTotalMonthly();
+    const te = getTotalExp();
+    const emg = emergency();
+    const free = getFreeAmount();
+    return [
+      { indicador: 'Renda líquida', valor: inc },
+      { indicador: 'Parcelas dívidas', valor: tm },
+      { indicador: 'Gastos fixos', valor: te },
+      { indicador: 'Reserva', valor: emg },
+      { indicador: 'Sobra mensal', valor: Math.max(free, 0) }
+    ];
+  }
+
+  window.exportOverviewExcel = () => {
+    if (!window.XLSX) {
+      toast('Biblioteca de Excel indisponível.', 'err');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(getOverviewRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'VisaoGeral');
+    XLSX.writeFile(wb, 'finctrl-visao-geral.xlsx');
+    toast('📥 Excel gerado com sucesso.', 'ok');
+  };
+
+  window.exportOverviewPdf = () => {
+    if (!window.jspdf?.jsPDF) {
+      toast('Biblioteca de PDF indisponível.', 'err');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(15);
+    doc.text('FinCtrl - Resumo Financeiro', 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 24);
+    let y = 34;
+    getOverviewRows().forEach((row) => {
+      doc.text(`${row.indicador}: ${fmt(row.valor)}`, 14, y);
+      y += 8;
+    });
+    doc.save('finctrl-visao-geral.pdf');
+    toast('🧾 PDF gerado com sucesso.', 'ok');
+  };
+
+  function renderOverviewChart(inc, tm, te, emg, free) {
+    const canvas = document.getElementById('overview-chart');
+    if (!canvas || !window.Chart) return;
+    if (overviewChart) {
+      overviewChart.destroy();
+      overviewChart = null;
+    }
+    overviewChart = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Dívidas', 'Gastos', 'Reserva', 'Sobra'],
+        datasets: [{
+          data: [tm, te, emg, Math.max(free, 0)],
+          backgroundColor: ['#e45757', '#d69322', '#2f6fed', '#1f9d55']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          title: { display: true, text: `Distribuição da renda (${fmt(inc)})` }
+        }
+      }
+    });
+  }
 
   // ── RENDER ─────────────────────────────────────────────────
   function renderOverview() {
@@ -308,6 +391,8 @@
         <div class="cf-bar-bg"><div class="cf-bar" style="width:${pct(cf.val,maxB)}%;background:${cf.color};"></div></div>
         <div class="cf-val num">${fmt(cf.val)}</div>
       </div>`).join('');
+
+    renderOverviewChart(inc, tm, te, emg, free);
 
     // People
     const map = getPeopleMap();
