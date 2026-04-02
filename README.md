@@ -29,6 +29,17 @@ fincrtl/
 
 ---
 
+## Versão atual — v1.6.0 (2026-04-02)
+
+Principais entregas desta versão:
+
+- 📊 **Gráficos na Visão Geral (Chart.js)** para visualizar rapidamente a distribuição da renda entre dívidas, gastos, reserva e sobra.
+- 📥 **Exportação de relatórios em Excel e PDF** na página principal.
+- 👥 **Isolamento multiusuário reforçado** com `ownerUid` nos registros críticos.
+- 🔐 **Regras mais fortes no Firestore** exigindo correspondência entre `ownerUid` e `request.auth.uid` nas gravações por usuário.
+
+---
+
 ## PASSO 1 — Criar projeto no Firebase
 
 1. Acesse https://console.firebase.google.com

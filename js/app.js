@@ -47,8 +47,17 @@ export const state = {
 const ADMIN_EMAILS = []; // Ex: ['admin@seudominio.com']
 const ADMIN_ACCESS_MODE = 'allowlist'; // 'allowlist' | 'all-authenticated'
 const MAX_TEXT = 180;
-const APP_VERSION = 'v1.5.0';
+const APP_VERSION = 'v1.6.0';
 const RELEASE_NOTES = [
+  {
+    version: 'v1.6.0',
+    date: '2026-04-02',
+    notes: [
+      'Dashboard com gráfico Chart.js para leitura rápida do mês.',
+      'Exportação da visão geral em PDF e Excel.',
+      'Reforço de isolamento multiusuário com validação de ownerUid.'
+    ]
+  },
   {
     version: 'v1.5.0',
     date: '2026-03-29',
@@ -717,7 +726,11 @@ export async function actionTogglePaid(id) {
   const debt = state.debts.find((d) => d.id === id);
   if (!debt) return;
   const paid = !Boolean(debt.paid);
-  await updateDoc(itemPath('debts', id), { paid, updatedAt: serverTimestamp() });
+  await updateDoc(itemPath('debts', id), {
+    ownerUid: ownerUid(),
+    paid,
+    updatedAt: serverTimestamp()
+  });
   debt.paid = paid;
 }
 
