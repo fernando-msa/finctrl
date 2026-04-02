@@ -1,70 +1,33 @@
-// ============================================================
-// firestore.rules — Regras de segurança do Firestore
-// Cole isso no Firebase Console → Firestore → Regras
-// ============================================================
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
+    function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
     }
 
-    function hasOwnerUidInWrite() {
-      return request.resource.data.ownerUid == request.auth.uid;
+    function hasOnlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
     }
 
-    // Logs globais de diagnóstico (somente dono do log)
-    match /logs/{logId} {
-      allow create: if isSignedIn()
-                    && request.resource.data.uid == request.auth.uid;
-      allow read: if isSignedIn()
-                  && resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.size() <= 40
+        && hasOnlyKeys(['profile', 'settings', 'summary', 'updatedAt']);
+      allow delete: if false;
+
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(uid)
+          && request.resource.data.size() <= 30;
+      }
     }
 
-    // Cada usuário só acessa seus próprios dados
-    match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-                            && hasOwnerUidInWrite()
-                            && request.resource.data.keys().hasAll(['ownerUid']);
-      allow delete: if isOwner(userId);
-
-      match /debts/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
-        allow delete: if isOwner(userId);
-      }
-
-      match /expenses/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
-        allow delete: if isOwner(userId);
-      }
-
-      match /fgts/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
-        allow delete: if isOwner(userId);
-      }
-
-      match /goals/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && hasOwnerUidInWrite();
-        allow delete: if isOwner(userId);
-      }
-
-      match /logs/{docId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId)
-                      && request.resource.data.uid == request.auth.uid;
-        allow update, delete: if false;
-      }
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
