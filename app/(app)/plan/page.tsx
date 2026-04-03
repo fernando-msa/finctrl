@@ -1,5 +1,5 @@
-import { SectionShell } from "@/components/ui/section-shell";
+import { redirect } from "next/navigation";
 
-export default function PlanPage() {
-  return <SectionShell title="Plan" description="Módulo plan da arquitetura FinCtrl v2." />;
+export default function Page() {
+  redirect("/pages/plano.html" as any);
 }

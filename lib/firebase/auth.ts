@@ -14,4 +14,30 @@ export async function requireSession() {
   return session;
 }
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split(".");
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    const json = Buffer.from(parts[1], "base64url").toString("utf8");
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export async function getSessionUid() {
+  const session = await requireSession();
+  const payload = decodeJwtPayload(session);
+
+  const uid = payload?.uid ?? payload?.user_id ?? payload?.sub;
+  if (!uid || typeof uid !== "string") {
+    throw new Error("Não foi possível identificar o usuário autenticado pela sessão.");
+  }
+
+  return uid;
+}
+
 export { SESSION_COOKIE_NAME };

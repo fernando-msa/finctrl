@@ -9,13 +9,13 @@ import { getAnalytics, isSupported } from 'https://www.gstatic.com/firebasejs/10
 // para ambientes locais/staging sem alterar o código versionado.
 const defaultFirebaseConfig = {
   apiKey: 'AIzaSyDnqqfvrAJdEJFzDNjt4gohg6h63unL8g4',
-  authDomain: 'fincrtl-3e976.firebaseapp.com',
-  projectId: 'fincrtl-3e976',
-  storageBucket: 'fincrtl-3e976.firebasestorage.app',
+  authDomain: 'finctrl-3e976.firebaseapp.com',
+  projectId: 'finctrl-3e976',
+  storageBucket: 'finctrl-3e976.firebasestorage.app',
   messagingSenderId: '1052094135775',
   appId: '1:1052094135775:web:d25f0dd40c5d992437186a',
   measurementId: 'G-BLK1Q2494Z',
-  databaseURL: 'https://fincrtl-3e976-default-rtdb.firebaseio.com'
+  databaseURL: 'https://finctrl-3e976-default-rtdb.firebaseio.com'
 };
 
 if (!globalThis.__FINCTRL_FIREBASE_CONFIG__) {
