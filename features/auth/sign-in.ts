@@ -1,8 +1,9 @@
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { clientAuth } from "@/lib/firebase/client";
+import { getClientAuth } from "@/lib/firebase/client";
 
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
+  const clientAuth = getClientAuth();
   const credential = await signInWithPopup(clientAuth, provider);
   const token = await credential.user.getIdToken();
 

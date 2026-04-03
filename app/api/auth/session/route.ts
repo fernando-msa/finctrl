@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { adminAuth } from "@/lib/firebase/admin";
+import { getAdminAuth } from "@/lib/firebase/admin";
 import { SESSION_COOKIE_NAME } from "@/lib/firebase/auth";
 
 const bodySchema = z.object({
@@ -10,7 +10,18 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   const body = bodySchema.parse(await request.json());
   const expiresIn = 1000 * 60 * 60 * 24 * 5;
-  const sessionCookie = await adminAuth.createSessionCookie(body.idToken, { expiresIn });
+
+  let sessionCookie: string;
+  try {
+    const adminAuth = getAdminAuth();
+    sessionCookie = await adminAuth.createSessionCookie(body.idToken, { expiresIn });
+  } catch (error) {
+    console.error("[auth/session] Falha ao criar session cookie:", error);
+    return NextResponse.json(
+      { error: "Serviço de autenticação indisponível no servidor." },
+      { status: 503 }
+    );
+  }
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set({
