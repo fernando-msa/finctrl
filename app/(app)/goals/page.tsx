@@ -1,5 +1,5 @@
-import { SectionShell } from "@/components/ui/section-shell";
+import { redirect } from "next/navigation";
 
-export default function GoalsPage() {
-  return <SectionShell title="Goals" description="Módulo goals da arquitetura FinCtrl v2." />;
+export default function Page() {
+  redirect("/pages/metas.html");
 }

@@ -1,5 +1,5 @@
-import { SectionShell } from "@/components/ui/section-shell";
+import { redirect } from "next/navigation";
 
-export default function ExpensesPage() {
-  return <SectionShell title="Expenses" description="Módulo expenses da arquitetura FinCtrl v2." />;
+export default function Page() {
+  redirect("/pages/gastos.html");
 }

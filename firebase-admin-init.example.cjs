@@ -12,7 +12,7 @@ const serviceAccount = require('./secrets/serviceAccountKey.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://fincrtl-3e976-default-rtdb.firebaseio.com'
+  databaseURL: 'https://finctrl-3e976-default-rtdb.firebaseio.com'
 });
 
 module.exports = admin;
