@@ -11,7 +11,7 @@ const privateRoutes = [
   "/settings"
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPrivate = privateRoutes.some((route) => pathname.startsWith(route));
 
