@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { getSessionUid } from "@/lib/firebase/auth";
 import { listExpenses } from "@/server/repositories/expenses-repository";
+import { Expense } from "@/types/finance";
 
 const categoryLabel: Record<string, string> = {
   moradia: "Moradia",
@@ -16,8 +18,21 @@ function formatCurrency(value: number) {
 }
 
 export default async function ExpensesPage() {
-  const uid = await getSessionUid();
-  const expenses = await listExpenses(uid);
+  let uid: string;
+  try {
+    uid = await getSessionUid();
+  } catch (error) {
+    console.error("[expenses] sessão sem UID válido, fallback para legado:", error);
+    redirect("/pages/gastos.html" as any);
+  }
+
+  let expenses: Expense[] = [];
+  try {
+    expenses = await listExpenses(uid);
+  } catch (error) {
+    console.error("[expenses] falha ao buscar despesas no Firestore, fallback para legado:", error);
+    redirect("/pages/gastos.html" as any);
+  }
 
   const total = expenses.reduce((acc, item) => acc + item.amount, 0);
   const recurring = expenses.filter((item) => item.recurring).reduce((acc, item) => acc + item.amount, 0);
