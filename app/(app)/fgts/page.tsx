@@ -1,5 +1,5 @@
-import { SectionShell } from "@/components/ui/section-shell";
+import { redirect } from "next/navigation";
 
-export default function FgtsPage() {
-  return <SectionShell title="Fgts" description="Módulo fgts da arquitetura FinCtrl v2." />;
+export default function Page() {
+  redirect("/pages/fgts.html" as any);
 }

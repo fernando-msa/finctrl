@@ -1,5 +1,5 @@
-import { SectionShell } from "@/components/ui/section-shell";
+import { redirect } from "next/navigation";
 
-export default function DiagnosticsPage() {
-  return <SectionShell title="Diagnostics" description="Módulo diagnostics da arquitetura FinCtrl v2." />;
+export default function Page() {
+  redirect("/pages/diagnostico.html" as any);
 }
