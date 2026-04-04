@@ -1,4 +1,4 @@
-import { state, actionSaveProfile, toast } from './app.js';
+import { state, actionSaveProfile, toast, renderHtml } from './app.js';
 
 const ID = 'wizard-modal';
 const TOTAL_STEPS = 5;
@@ -54,7 +54,7 @@ function ensureModal() {
   modal.style.alignItems = 'center';
   modal.style.justifyContent = 'center';
   modal.style.zIndex = '9998';
-  modal.innerHTML = `
+  renderHtml(modal, `
     <div style="width:min(640px,92vw);background:#101010;border:1.5px solid #343434;border-radius:12px;padding:20px;color:#f5f5f5;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <h3 style="margin:0">Configuração guiada (5 etapas)</h3>
@@ -70,7 +70,7 @@ function ensureModal() {
         <button id="wiz-next" style="padding:9px 12px;border-radius:8px;border:none;background:#c4960a;color:#101010;font-weight:700;">Próxima etapa →</button>
       </div>
     </div>
-  `;
+  `);
 
   document.body.appendChild(modal);
 
@@ -212,7 +212,7 @@ function renderStep(modal) {
   nextBtn.textContent = currentStep === TOTAL_STEPS ? 'Salvar configuração' : 'Próxima etapa →';
 
   if (currentStep === 1) {
-    content.innerHTML = `
+    renderHtml(content, `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;">Renda mensal
           <input id="wiz-income" type="number" min="0" step="0.01" value="${wizardDraft.income || ''}" style="padding:10px;border-radius:8px;border:1px solid #3f3f3f;background:#191919;color:#fff;" />
@@ -221,20 +221,20 @@ function renderStep(modal) {
           <input id="wiz-emergency" type="number" min="0" step="0.01" value="${wizardDraft.emergency || ''}" style="padding:10px;border-radius:8px;border:1px solid #3f3f3f;background:#191919;color:#fff;" />
         </label>
       </div>
-    `;
+    `);
   }
 
   if (currentStep === 2) {
-    content.innerHTML = `
+    renderHtml(content, `
       <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;">Total de gastos essenciais por mês (moradia, luz, água, alimentação básica)
         <input id="wiz-essentials" type="number" min="0" step="0.01" value="${wizardDraft.essentials || ''}" style="padding:10px;border-radius:8px;border:1px solid #3f3f3f;background:#191919;color:#fff;" />
       </label>
       <p style="font-size:12px;color:#bdbdbd;margin-top:8px;">Esse valor ajuda o app a estimar quanto você consegue direcionar para quitar dívidas.</p>
-    `;
+    `);
   }
 
   if (currentStep === 3) {
-    content.innerHTML = `
+    renderHtml(content, `
       <div style="font-size:12px;color:#bdbdbd;margin-bottom:8px;">Hoje, como você percebe a pressão das dívidas?</div>
       <div style="display:grid;gap:8px;">
         ${[
@@ -247,11 +247,11 @@ function renderStep(modal) {
             <span style="font-size:13px;">${label}</span>
           </label>`).join('')}
       </div>
-    `;
+    `);
   }
 
   if (currentStep === 4) {
-    content.innerHTML = `
+    renderHtml(content, `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
           <div style="font-size:12px;color:#bdbdbd;margin-bottom:8px;">Seu foco principal agora</div>
@@ -295,11 +295,11 @@ function renderStep(modal) {
             </label>`).join('')}
         </div>
       </div>
-    `;
+    `);
   }
 
   if (currentStep === 5) {
-    content.innerHTML = summaryHtml();
+    renderHtml(content, summaryHtml());
     const applyBtn = content.querySelector('#wiz-apply-reco');
     if (applyBtn) {
       applyBtn.addEventListener('click', () => {

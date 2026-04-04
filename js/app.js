@@ -95,6 +95,14 @@ export const esc = (value = '') => String(value)
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#39;');
 
+export function renderHtml(target, html = '') {
+  if (!target) return;
+  const range = document.createRange();
+  range.selectNode(target);
+  const fragment = range.createContextualFragment(String(html));
+  target.replaceChildren(fragment);
+}
+
 export const pct = (a = 0, b = 1) => {
   const denom = Number(b || 0);
   if (denom <= 0) return 0;
@@ -208,10 +216,10 @@ function compactNavTabs(nav) {
   const more = document.createElement('details');
   more.className = 'nav-more';
   const activeOverflow = overflow.some((tab) => tab.classList.contains('active'));
-  more.innerHTML = `
+  renderHtml(more, `
     <summary class="nav-tab ${activeOverflow ? 'active' : ''}">➕ Mais</summary>
     <div class="nav-more-list"></div>
-  `;
+  `);
   const list = more.querySelector('.nav-more-list');
   overflow.forEach((tab) => {
     tab.classList.remove('active');
@@ -296,7 +304,7 @@ function renderSupportModal() {
   modal = document.createElement('div');
   modal.id = 'support-modal';
   modal.className = 'modal-backdrop';
-  modal.innerHTML = `
+  renderHtml(modal, `
     <div class="modal-card">
       <div class="modal-head">
         <div>
@@ -327,7 +335,7 @@ function renderSupportModal() {
         <button class="btn btn-dark" id="support-send">Enviar ao suporte</button>
       </div>
     </div>
-  `;
+  `);
   document.body.appendChild(modal);
 
   const close = () => { modal.style.display = 'none'; };
@@ -373,7 +381,7 @@ function renderReleaseModal() {
   modal = document.createElement('div');
   modal.id = 'release-modal';
   modal.className = 'modal-backdrop';
-  modal.innerHTML = `
+  renderHtml(modal, `
     <div class="modal-card">
       <div class="modal-head">
         <div>
@@ -384,7 +392,7 @@ function renderReleaseModal() {
       </div>
       <div id="release-list" style="margin-top:.85rem;display:grid;gap:.75rem;"></div>
     </div>
-  `;
+  `);
   document.body.appendChild(modal);
 
   const notes = RELEASE_NOTES.length ? RELEASE_NOTES : [{
@@ -392,14 +400,14 @@ function renderReleaseModal() {
     date: new Date().toISOString().slice(0, 10),
     notes: ['Sem notas de versão publicadas para esta atualização.']
   }];
-  modal.querySelector('#release-list').innerHTML = notes.map((item) => `
+  renderHtml(modal.querySelector('#release-list'), notes.map((item) => `
     <div style="border:1px solid #2f3340;border-radius:10px;padding:.65rem .75rem;">
       <div style="font-weight:700;">${item.version} <span class="mini-note">· ${item.date}</span></div>
       <ul style="margin:.5rem 0 .2rem;padding-left:1.1rem;">
         ${item.notes.map((n) => `<li style="margin:.2rem 0;">${esc(n)}</li>`).join('')}
       </ul>
     </div>
-  `).join('');
+  `).join(''));
 
   const close = () => { modal.style.display = 'none'; };
   modal.querySelector('#release-close').addEventListener('click', close);
@@ -413,7 +421,7 @@ function renderAssistantModal() {
   modal = document.createElement('div');
   modal.id = 'assistant-modal';
   modal.className = 'modal-backdrop';
-  modal.innerHTML = `
+  renderHtml(modal, `
     <div class="modal-card">
       <div class="modal-head">
         <div>
@@ -434,14 +442,14 @@ function renderAssistantModal() {
         <button class="btn btn-dark" id="assistant-send">Enviar pergunta</button>
       </div>
     </div>
-  `;
+  `);
   document.body.appendChild(modal);
 
   const pushAssistantMessage = (html, role = 'assistant') => {
     const box = document.getElementById('assistant-content');
     const bubble = document.createElement('div');
     bubble.className = `assistant-bubble ${role}`;
-    bubble.innerHTML = html;
+    renderHtml(bubble, html);
     box.appendChild(bubble);
     box.scrollTop = box.scrollHeight;
   };

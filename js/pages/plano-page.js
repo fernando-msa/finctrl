@@ -1,4 +1,4 @@
-import { initAuth, state, fmt, pct, esc, getFreeAmount, getSortedDebts, handleLogout as _out } from '../app.js';
+import { initAuth, state, fmt, pct, esc, renderHtml, getFreeAmount, getSortedDebts, handleLogout as _out } from '../app.js';
 
 window.handleLogout = _out;
 
@@ -76,11 +76,11 @@ function renderMissions() {
     </label>
   `).join('');
 
-  document.getElementById('missions-box').innerHTML = `
+  renderHtml(document.getElementById('missions-box'), `
     <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">${doneCount}/${missions.length} concluídas (${progress}%)</div>
     <div class="prog-bar" style="height:10px;margin-bottom:.85rem;"><div class="prog-fill" style="width:${progress}%;"></div></div>
     ${items}
-  `;
+  `);
 
   document.querySelectorAll('[data-mission-id]').forEach((input) => {
     input.addEventListener('change', (ev) => {
@@ -102,18 +102,18 @@ window.setMethod = (m) => {
 
 function render() {
   const me = document.getElementById('method-box');
-  me.innerHTML = method === 'avalanche'
+  renderHtml(me, method === 'avalanche'
     ? '🔥 <strong>Avalanche</strong> — Pague o mínimo em todas e coloque qualquer sobra na dívida com <strong>maior juros</strong>. Economiza mais dinheiro no longo prazo.'
-    : '⛄ <strong>Bola de Neve</strong> — Pague o mínimo em todas e coloque qualquer sobra na dívida com <strong>menor saldo</strong>. Gera motivação com quitações rápidas.';
+    : '⛄ <strong>Bola de Neve</strong> — Pague o mínimo em todas e coloque qualquer sobra na dívida com <strong>menor saldo</strong>. Gera motivação com quitações rápidas.');
 
   const extra = Math.max(getFreeAmount(), 0);
   const ordered = getSortedDebts();
 
   const pl = document.getElementById('plan-list');
   if (!ordered.length) {
-    pl.innerHTML = '<div class="alert ok"><strong>🎉 Parabéns!</strong> Nenhuma dívida ativa no momento!</div>';
+    renderHtml(pl, '<div class="alert ok"><strong>🎉 Parabéns!</strong> Nenhuma dívida ativa no momento!</div>');
   } else {
-    pl.innerHTML = ordered.map((d, i) => {
+    renderHtml(pl, ordered.map((d, i) => {
       const isFirst = i === 0;
       const ef = d.monthly + (isFirst ? extra : 0);
       const months = ef > 0 ? Math.ceil(d.total / ef) : '?';
@@ -131,15 +131,15 @@ function render() {
           <br>Previsão de quitação: <span class="go">~${months} meses</span></p>
         </div>
       </div>`;
-    }).join('');
+    }).join(''));
   }
 
   const total = state.debts.reduce((s, d) => s + d.total, 0);
   const paidTotal = state.debts.filter((d) => d.paid).reduce((s, d) => s + d.total, 0);
   const p = pct(paidTotal, total);
-  document.getElementById('progress-box').innerHTML = `
+  renderHtml(document.getElementById('progress-box'), `
     <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">${p}% quitado — ${fmt(paidTotal)} de ${fmt(total)}</div>
-    <div class="prog-bar" style="height:14px;"><div class="prog-fill" style="width:${p}%;"></div></div>`;
+    <div class="prog-bar" style="height:14px;"><div class="prog-fill" style="width:${p}%;"></div></div>`);
 
   let cumMonths = 0;
   const phases = ordered.map((d, i) => {
@@ -154,7 +154,7 @@ function render() {
       </div>
     </div>`;
   }).join('');
-  document.getElementById('phases-box').innerHTML = phases || '<div class="empty">Cadastre dívidas para ver o cronograma.</div>';
+  renderHtml(document.getElementById('phases-box'), phases || '<div class="empty">Cadastre dívidas para ver o cronograma.</div>');
 
   const tips = [];
   const highRate = ordered.filter((d) => d.rate >= 8);
@@ -169,9 +169,9 @@ function render() {
     if (top) tips.push(`🎯 <strong>Meta prioritária:</strong> "${esc(top.name)}" — R$ ${fmt(top.target)}. Ao quitar a 1ª dívida, redirecione a parcela liberada para essa meta.`);
   }
 
-  document.getElementById('tips-box').innerHTML = tips
+  renderHtml(document.getElementById('tips-box'), tips
     .map((t) => `<div class="plan-item"><div class="plan-body"><p>${t}</p></div></div>`)
-    .join('');
+    .join(''));
 
   renderMissions();
 }

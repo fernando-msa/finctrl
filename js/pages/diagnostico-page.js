@@ -11,6 +11,7 @@ import {
   loadRecentLogs,
   actionSendFeedback,
   esc,
+  renderHtml,
   toast,
   handleLogout as _out
 } from '../app.js';
@@ -70,7 +71,7 @@ function computeHealthScore() {
 }
 
 function renderHealthScore(health) {
-  document.getElementById('health-score-box').innerHTML = `
+  renderHtml(document.getElementById('health-score-box'), `
     <div class="plan-item">
       <div class="plan-body">
         <h3>📈 Score de Saúde Financeira: <span class="go">${health.score}/100</span> · ${health.label}</h3>
@@ -80,7 +81,7 @@ function renderHealthScore(health) {
         </ol>
       </div>
     </div>
-  `;
+  `);
 }
 
 function renderStats() {
@@ -95,13 +96,13 @@ function renderStats() {
     { label: 'Score financeiro', val: `${health.score}/100`, sub: health.label, cls: health.score >= 70 ? 'c-green' : health.score >= 40 ? 'c-orange' : 'c-red' }
   ];
 
-  document.getElementById('diag-cards').innerHTML = cards.map((c) => `
+  renderHtml(document.getElementById('diag-cards'), cards.map((c) => `
     <div class="s-card ${c.cls}">
       <div class="s-label">${c.label}</div>
       <div class="s-val" style="font-size:1.2rem;word-break:break-word;">${c.val}</div>
       <div class="s-sub">${c.sub}</div>
     </div>
-  `).join('');
+  `).join(''));
 
   renderHealthScore(health);
 }
@@ -113,18 +114,18 @@ function renderLogs() {
 
   const tbody = document.getElementById('logs-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhum log para esse filtro.</td></tr>';
+    renderHtml(tbody, '<tr><td colspan="4" class="empty">Nenhum log para esse filtro.</td></tr>');
     return;
   }
 
-  tbody.innerHTML = rows.map((l) => `
+  renderHtml(tbody, rows.map((l) => `
     <tr>
       <td>${normalizeDate(l.createdAt)}</td>
       <td>${levelTag(l.level)}</td>
       <td>${esc(l.message || '—')}</td>
       <td style="max-width:380px;white-space:pre-wrap;word-break:break-word;font-size:0.68rem;">${esc(safeJson(l.payload))}</td>
     </tr>
-  `).join('');
+  `).join(''));
 }
 
 function refreshFilterButtons() {
