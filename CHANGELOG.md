@@ -4,6 +4,14 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.2.1](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.0...finctrl-v2-v2.2.1) (2026-04-04)
+
+
+### Bug Fixes
+
+* bump next to 16.0.11 for vuln remediation ([90e479a](https://github.com/fernando-msa/finctrl/commit/90e479a4ca44f93caf26fcba93e3f1bfa7026d69))
+* bump Next.js to 16.0.11 to remediate vulnerability ([e3eb5c6](https://github.com/fernando-msa/finctrl/commit/e3eb5c6af8ced8425e522d6eb70e216a09660458))
+
 ## [2.2.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.1.0...finctrl-v2-v2.2.0) (2026-04-04)
 
 
