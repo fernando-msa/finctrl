@@ -13,7 +13,7 @@ const statusLabel: Record<Debt["status"], string> = {
 
 const emptyForm: DebtForm = {
   creditor: "",
-  principal: 0,
+  principal: 1,
   annualInterestRate: 0,
   status: "ativa"
 };

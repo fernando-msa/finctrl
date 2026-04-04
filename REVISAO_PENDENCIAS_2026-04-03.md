@@ -86,3 +86,9 @@ Considerar o produto pronto para operação com cliente quando:
 - Onboarding de primeiro uso tiver taxa de conclusão monitorada.
 - Cada release tiver changelog público e comunicado de novidades.
 - Testes de regressão críticos passarem antes de deploy.
+
+## 6) Atualização de execução — início da P1 (04/04/2026)
+
+- ✅ **Métricas de ativação iniciadas**: onboarding passou a registrar eventos de início, conclusão de etapa e conclusão total via endpoint dedicado.
+- ✅ **Onboarding guiado evoluído**: página de primeiros passos agora possui checklist interativo com progresso persistido localmente.
+- 🔜 **Próximo incremento P1**: publicar notas de versão em página dedicada para clientes e ampliar smoke tests de CRUD/autenticação no CI.
