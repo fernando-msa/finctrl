@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/firebase/auth";
 
+export const dynamic = "force-dynamic";
+
 const links = [
   ["/dashboard", "Dashboard"],
   ["/expenses", "Despesas"],
