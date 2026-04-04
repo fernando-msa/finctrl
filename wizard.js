@@ -4,7 +4,6 @@
 // ============================================================
 
 import { state, fmt, actionSaveProfile, actionAddDebt, actionAddExpense, actionAddGoal, toast } from './app.js';
-import { saveProfile } from './firebase.js';
 
 let currentStep = 1;
 const TOTAL_STEPS = 5;

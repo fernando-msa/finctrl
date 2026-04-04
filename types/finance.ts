@@ -22,6 +22,14 @@ export type Goal = {
   dueDate: string;
 };
 
+export type FgtsEntry = {
+  id: string;
+  accountLabel: string;
+  balance: number;
+  modality: "saque_aniversario" | "saque_rescisao" | "indefinido";
+  updatedAt: string;
+};
+
 export type FinancialProfile = {
   debtRatio: number;
   avgInterestRate: number;
