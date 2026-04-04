@@ -10,10 +10,10 @@ const updateDebtSchema = z.object({
   status: z.enum(["ativa", "quitada", "atraso"]).optional()
 });
 
-export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: NextRequest, context: { params: { id: string } }) {
   try {
     const uid = await getSessionUid();
-    const { id } = await context.params;
+    const { id } = context.params;
     const payload = updateDebtSchema.parse(await request.json());
     await updateDebt(uid, id, payload);
 
@@ -24,10 +24,10 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   }
 }
 
-export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(_request: NextRequest, context: { params: { id: string } }) {
   try {
     const uid = await getSessionUid();
-    const { id } = await context.params;
+    const { id } = context.params;
     await deleteDebt(uid, id);
 
     return NextResponse.json({ ok: true });
