@@ -1,83 +1,85 @@
-# Revisão do projeto FinCtrl (03/04/2026)
+# Revisão do projeto FinCtrl (atualizada em 04/04/2026)
 
-## Visão geral
+## 1) Estado atual
 
-O projeto já possui uma base funcional em Next.js com autenticação, área privada e integração inicial com Firebase.
-No entanto, ainda existe uma transição incompleta entre o legado em páginas HTML estáticas e a nova arquitetura App Router.
+O FinCtrl avançou na migração para App Router e já possui as rotas principais em Next.js.
+Ainda assim, para virar uma plataforma pronta para operação comercial, faltam quatro blocos estratégicos:
 
-## O que já está consistente
+1. **UX responsiva consistente** em todas as telas e componentes.
+2. **CRUD completo** (inserção, edição e remoção) para despesas, dívidas, metas e FGTS.
+3. **Onboarding guiado** para primeiro uso do cliente final.
+4. **Versionamento público de produto** (changelog e notas por release).
 
-- Estrutura de módulos privados e públicos no App Router.
-- Autenticação por cookie de sessão (`finctrl_session`) com proteção em layout privado.
-- Repositórios de leitura para despesas e dívidas via Firestore Admin SDK.
-- Build de produção concluindo com sucesso.
+## 2) Pendências priorizadas
 
-## Pendências identificadas
+### P0 — Produto mínimo vendável (foco imediato)
 
-### P0 — Correções críticas de engenharia (fazer primeiro)
+1. **CRUD completo por módulo**
+   - `expenses`: criar/editar/excluir com validação.
+   - `debts`: criar/editar/excluir com validação de taxas/status.
+   - `goals`: criar/editar/excluir com progresso automático.
+   - `fgts`: criar/editar/excluir contas e modalidade.
 
-1. **Corrigir suíte de testes unitários (Vitest) com alias `@/` quebrado**
-   - O teste `tests/unit/score.test.ts` importa `@/features/...`, mas o `vitest.config.ts` não resolve alias de `tsconfig`.
-   - Resultado atual: `npm run test` falha antes de executar os testes.
+2. **Resiliência de erro por tela**
+   - Exibir feedback amigável quando backend estiver indisponível.
+   - Evitar redirecionamentos silenciosos que confundem o usuário.
 
-2. **Corrigir script de lint (`npm run lint`)**
-   - O comando atual (`next lint`) está falhando no ambiente com erro de diretório inválido (`/workspace/finctrl/lint`).
-   - Necessário revisar comando e/ou migração para ESLint CLI conforme versão atual do Next.
+3. **Onboarding de primeiro uso**
+   - Tutorial em etapas com checklist de conclusão.
+   - CTA direto para começar por despesas/dívidas.
 
-3. **Remover fallback inseguro de sessão em produção**
-   - Quando falha a criação de session cookie pelo Admin SDK, o endpoint faz fallback para usar `idToken` puro como cookie.
-   - Isso pode mascarar erro de configuração e fragilizar o modelo de sessão no servidor.
+### P1 — Confiabilidade e operação
 
-### P1 — Completar migração funcional para v2
+4. **Versionamento de produto transparente**
+   - Manter `CHANGELOG.md` com padrão semântico.
+   - Publicar “Novidades da versão” para clientes a cada release.
 
-4. **Substituir resumo mockado do dashboard por dados reais**
-   - `getDashboardSummary` retorna valores fixos e gráfico estático.
+5. **Métricas de uso e funil**
+   - Acompanhar conclusão do onboarding.
+   - Rastrear retenção semanal e uso por módulo.
 
-5. **Migrar páginas ainda redirecionadas ao legado (`/pages/*.html`)**
-   - `goals`, `fgts`, `plan` e `diagnostics` ainda não têm telas v2 reais e redirecionam para HTML legado.
-   - Isso fragmenta UX, dificulta testes e impede padronização de segurança/telemetria.
+6. **QA mais forte (além do básico atual)**
+   - Cobrir fluxos de CRUD e autenticação com testes e2e.
+   - Definir smoke tests mínimos por deploy.
 
-6. **Implementar CRUD completo para entidades financeiras**
-   - Hoje há leitura de despesas e dívidas.
-   - Ainda faltam operações de criação/edição/exclusão e módulos equivalentes para metas/FGTS.
+### P2 — Diferenciais competitivos (mercado)
 
-### P2 — Robustez, DX e observabilidade
+7. **Recursos adotados por apps financeiros modernos**
+   - Metas com gamificação leve (streak, medalhas de consistência).
+   - Alertas inteligentes (vencimentos, estourou orçamento, dívidas em atraso).
+   - Insights automáticos por comportamento mensal.
 
-7. **Ajustar política de renderização dinâmica explícita para rotas autenticadas**
-   - O build passa, mas durante geração estática aparecem avisos de uso dinâmico (`cookies`) em `/expenses` e `/debts`.
-   - Vale explicitar estratégia (`force-dynamic`/cache) para evitar ruído operacional.
+8. **Plano premium futuro**
+   - Simulações avançadas de quitação.
+   - Compartilhamento de progresso e relatórios.
+   - Recomendações com IA explicável.
 
-8. **Fortalecer validação de App Check**
-   - Hoje a validação aceita apenas presença do header/token, sem verificação criptográfica.
-   - Ideal: validação real via Admin SDK e tratamento padronizado de erro HTTP.
+## 3) Plano de execução sugerido (4 ciclos)
 
-9. **Fechar lacunas de qualidade de dependências e CI**
-   - Fixar versões-chave (evitar `next: latest` em produção).
-   - Atualizar baseline-browser-mapping (aviso recorrente no build).
-   - Formalizar pipeline mínimo: `typecheck + lint + test` como gate.
+### Ciclo 1 (1–2 semanas) — Base comercial
+- Entregar CRUD de despesas e dívidas.
+- Ajustar feedbacks de erro na UI.
+- Consolidar responsividade mobile/tablet.
 
-## Plano sugerido de execução (ordem)
+### Ciclo 2 (1–2 semanas) — Completar núcleo financeiro
+- Entregar CRUD de metas e FGTS.
+- Revisar dashboard e plano com dados reais de ponta a ponta.
 
-1. **Sprint de estabilização técnica (rápida)**
-   - Corrigir alias do Vitest.
-   - Corrigir lint.
-   - Remover fallback de sessão inseguro.
+### Ciclo 3 (1 semana) — Onboarding e ativação
+- Entregar tutorial guiado com checklist.
+- Publicar guia de primeiro uso e fluxo de ativação.
 
-2. **Sprint de produto v2 (migração total)**
-   - Implementar telas nativas para goals/fgts/plan/diagnostics.
-   - Entregar CRUD completo com Server Actions/API routes.
-   - Conectar dashboard a agregações reais.
+### Ciclo 4 (contínuo) — Transparência e fidelização
+- Formalizar changelog por versão.
+- Publicar notas de release para clientes.
+- Rodar rotina quinzenal de melhorias baseadas em uso.
 
-3. **Sprint de hardening**
-   - Reforçar App Check.
-   - Organizar estratégia de renderização dinâmica.
-   - Completar cobertura de testes unit/integration/e2e com browsers provisionados na CI.
+## 4) Critério de pronto (recomendado)
 
-## Critério de pronto recomendado
+Considerar o produto pronto para operação com cliente quando:
 
-Considerar a v2 “pronta para operação” apenas quando:
-
-- `npm run typecheck`, `npm run lint` e `npm run test` passarem sem ajustes manuais.
-- Não houver redirecionamentos para páginas HTML legadas nas rotas principais.
-- Dashboard, despesas, dívidas, metas e FGTS operarem com dados reais e fluxo CRUD completo.
-- Segurança de sessão e App Check estiverem validadas de ponta a ponta.
+- CRUD completo funcionar para `expenses`, `debts`, `goals` e `fgts`.
+- Layout estiver responsivo e validado em mobile/tablet/desktop.
+- Onboarding de primeiro uso tiver taxa de conclusão monitorada.
+- Cada release tiver changelog público e comunicado de novidades.
+- Testes de regressão críticos passarem antes de deploy.

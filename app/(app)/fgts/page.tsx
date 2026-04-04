@@ -19,7 +19,7 @@ export default async function FgtsPage() {
     uid = await getSessionUid();
   } catch (error) {
     console.error("[fgts] sessão sem UID válido, fallback para legado:", error);
-    redirect("/pages/fgts.html" as any);
+    redirect("/dashboard");
   }
 
   let entries: FgtsEntry[] = [];
@@ -27,7 +27,7 @@ export default async function FgtsPage() {
     entries = await listFgtsEntries(uid);
   } catch (error) {
     console.error("[fgts] falha ao buscar dados de FGTS no Firestore, fallback para legado:", error);
-    redirect("/pages/fgts.html" as any);
+    redirect("/dashboard");
   }
 
   const totalBalance = entries.reduce((acc, entry) => acc + entry.balance, 0);

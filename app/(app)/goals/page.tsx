@@ -17,7 +17,7 @@ export default async function GoalsPage() {
     uid = await getSessionUid();
   } catch (error) {
     console.error("[goals] sessão sem UID válido, fallback para legado:", error);
-    redirect("/pages/metas.html" as any);
+    redirect("/dashboard");
   }
 
   let goals: Goal[] = [];
@@ -25,7 +25,7 @@ export default async function GoalsPage() {
     goals = await listGoals(uid);
   } catch (error) {
     console.error("[goals] falha ao buscar metas no Firestore, fallback para legado:", error);
-    redirect("/pages/metas.html" as any);
+    redirect("/dashboard");
   }
 
   const totalTarget = goals.reduce((acc, goal) => acc + goal.targetAmount, 0);

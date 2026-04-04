@@ -14,7 +14,7 @@ export default async function PlanPage() {
     uid = await getSessionUid();
   } catch (error) {
     console.error("[plan] sessão sem UID válido, fallback para legado:", error);
-    redirect("/pages/plano.html" as any);
+    redirect("/dashboard");
   }
 
   let debts: Debt[] = [];
@@ -22,7 +22,7 @@ export default async function PlanPage() {
     debts = await listDebts(uid);
   } catch (error) {
     console.error("[plan] falha ao buscar dívidas no Firestore, fallback para legado:", error);
-    redirect("/pages/plano.html" as any);
+    redirect("/dashboard");
   }
 
   const monthlyDebtCommitment = debts

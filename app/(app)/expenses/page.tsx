@@ -23,7 +23,7 @@ export default async function ExpensesPage() {
     uid = await getSessionUid();
   } catch (error) {
     console.error("[expenses] sessão sem UID válido, fallback para legado:", error);
-    redirect("/pages/gastos.html" as any);
+    redirect("/dashboard");
   }
 
   let expenses: Expense[] = [];
@@ -31,7 +31,7 @@ export default async function ExpensesPage() {
     expenses = await listExpenses(uid);
   } catch (error) {
     console.error("[expenses] falha ao buscar despesas no Firestore, fallback para legado:", error);
-    redirect("/pages/gastos.html" as any);
+    redirect("/dashboard");
   }
 
   const total = expenses.reduce((acc, item) => acc + item.amount, 0);

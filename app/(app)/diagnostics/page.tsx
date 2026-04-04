@@ -39,7 +39,7 @@ export default async function DiagnosticsPage() {
     uid = await getSessionUid();
   } catch (error) {
     console.error("[diagnostics] sessão sem UID válido, fallback para legado:", error);
-    redirect("/pages/diagnostico.html" as any);
+    redirect("/dashboard");
   }
 
   let debts: Debt[] = [];
@@ -48,7 +48,7 @@ export default async function DiagnosticsPage() {
     [debts, expenses] = await Promise.all([listDebts(uid), listExpenses(uid)]);
   } catch (error) {
     console.error("[diagnostics] falha ao buscar dados no Firestore, fallback para legado:", error);
-    redirect("/pages/diagnostico.html" as any);
+    redirect("/dashboard");
   }
 
   const totalDebt = debts.filter((debt) => debt.status !== "quitada").reduce((acc, debt) => acc + debt.principal, 0);

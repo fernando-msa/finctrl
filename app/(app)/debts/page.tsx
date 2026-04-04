@@ -19,7 +19,7 @@ export default async function DebtsPage() {
     uid = await getSessionUid();
   } catch (error) {
     console.error("[debts] sessão sem UID válido, fallback para legado:", error);
-    redirect("/pages/dividas.html" as any);
+    redirect("/dashboard");
   }
 
   let debts: Debt[] = [];
@@ -27,7 +27,7 @@ export default async function DebtsPage() {
     debts = await listDebts(uid);
   } catch (error) {
     console.error("[debts] falha ao buscar dívidas no Firestore, fallback para legado:", error);
-    redirect("/pages/dividas.html" as any);
+    redirect("/dashboard");
   }
 
   const openDebts = debts.filter((debt) => debt.status !== "quitada");

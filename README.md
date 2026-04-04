@@ -64,6 +64,10 @@ npm run test
 npm run test:e2e
 ```
 
+## Transparência de releases
+
+- Histórico de mudanças para clientes: [`CHANGELOG.md`](./CHANGELOG.md)
+
 ## Roadmap sugerido
 
 1. Implementar CRUD completo em `expenses`, `debts`, `goals` e `fgts` com Server Actions.
