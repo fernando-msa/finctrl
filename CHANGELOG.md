@@ -26,3 +26,18 @@ Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
 ### Added
 - Base inicial FinCtrl v2 com App Router, autenticação e módulos financeiros.
+
+## [1.1.0] - 2025-12-10
+
+### Added
+- Evolução do dashboard com indicadores consolidados e gráficos.
+- Melhorias de UX para fluxo de metas e plano financeiro.
+
+### Changed
+- Ajustes de arquitetura para separar melhor camadas `features` e `server`.
+
+## [1.0.0] - 2025-10-01
+
+### Added
+- Primeira release estável do FinCtrl com autenticação e módulos financeiros base.
+- Estrutura inicial de testes automatizados (unitários e e2e).
