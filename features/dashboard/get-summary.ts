@@ -4,8 +4,36 @@ import { listExpenses } from "@/server/repositories/expenses-repository";
 import { listGoals } from "@/server/repositories/goals-repository";
 
 export async function getDashboardSummary() {
-  const uid = await getSessionUid();
-  const [expenses, debts, goals] = await Promise.all([listExpenses(uid), listDebts(uid), listGoals(uid)]);
+  const emptySummary = {
+    monthlyBalance: 0,
+    totalExpenses: 0,
+    openDebts: 0,
+    goalsProgress: 0,
+    chart: [
+      { name: "Gastos", value: 0 },
+      { name: "Dívidas", value: 0 },
+      { name: "Metas", value: 0 },
+      { name: "Sobra", value: 0 }
+    ]
+  };
+
+  let uid: string;
+  try {
+    uid = await getSessionUid();
+  } catch (error) {
+    console.error("[dashboard] sessão inválida. Exibindo resumo vazio.", error);
+    return emptySummary;
+  }
+
+  let expenses: Awaited<ReturnType<typeof listExpenses>> = [];
+  let debts: Awaited<ReturnType<typeof listDebts>> = [];
+  let goals: Awaited<ReturnType<typeof listGoals>> = [];
+  try {
+    [expenses, debts, goals] = await Promise.all([listExpenses(uid), listDebts(uid), listGoals(uid)]);
+  } catch (error) {
+    console.error("[dashboard] falha ao carregar dados do Firestore. Exibindo resumo vazio.", error);
+    return emptySummary;
+  }
 
   const totalExpenses = expenses.reduce((acc, item) => acc + item.amount, 0);
   const openDebts = debts.filter((debt) => debt.status !== "quitada");
