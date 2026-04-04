@@ -4,6 +4,21 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.2.3](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.2...finctrl-v2-v2.2.3) (2026-04-04)
+
+
+### Bug Fixes
+
+* atualiza integrity de @next/env no lockfile para deploy ([c65faca](https://github.com/fernando-msa/finctrl/commit/c65facad4b60a991489fa1c4361999176cf5b845))
+* correct context.params typing in expenses and debts route handlers ([83842b7](https://github.com/fernando-msa/finctrl/commit/83842b7ea2c12a3b31cd0fb0f17b706eb9fe3512))
+
+## [2.2.2](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.1...finctrl-v2-v2.2.2) (2026-04-04)
+
+
+### Bug Fixes
+
+* remove insecure document methods in js views ([d5c5384](https://github.com/fernando-msa/finctrl/commit/d5c53844550e0633d5edbbca530bbeecfb6cbea7))
+
 ## [2.2.1](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.0...finctrl-v2-v2.2.1) (2026-04-04)
 
 
