@@ -43,10 +43,33 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const body = `✅ Preview disponível: ${{ steps.deploy.outputs.preview_url }}`;
-            github.rest.issues.createComment({
+            const marker = '<!-- preview-deploy-comment -->';
+            const body = `${marker}
+            ✅ Preview disponível: ${{ steps.deploy.outputs.preview_url }}`;
+            const issue_number = context.payload.pull_request.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body,
+              issue_number,
             });
+
+            const existingComment = comments.find((comment) =>
+              comment.body && comment.body.includes(marker) && comment.user && comment.user.type === 'Bot'
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body,
+              });
+            }
