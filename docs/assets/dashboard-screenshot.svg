@@ -1,0 +1,15 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="720" fill="#0B1220"/>
+  <rect x="40" y="40" width="1200" height="640" rx="20" fill="#111827" stroke="#334155" stroke-width="3"/>
+  <rect x="72" y="90" width="220" height="550" fill="#1F2937"/>
+  <rect x="320" y="90" width="890" height="140" fill="#1E293B"/>
+  <rect x="320" y="260" width="500" height="380" fill="#0F172A"/>
+  <rect x="850" y="260" width="360" height="380" fill="#0F172A"/>
+  <rect x="360" y="500" width="42" height="120" fill="#22C55E"/>
+  <rect x="430" y="450" width="42" height="170" fill="#22C55E"/>
+  <rect x="500" y="390" width="42" height="230" fill="#22C55E"/>
+  <rect x="570" y="430" width="42" height="190" fill="#22C55E"/>
+  <rect x="640" y="360" width="42" height="260" fill="#22C55E"/>
+  <rect x="710" y="410" width="42" height="210" fill="#22C55E"/>
+  <text x="96" y="130" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="22">FinCtrl Dashboard</text>
+</svg>

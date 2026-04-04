@@ -1,4 +1,4 @@
-name: CI
+name: Coverage
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: ["main", "master", "work"]
 
 jobs:
-  quality:
+  coverage-smoke:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,14 +22,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Unit tests
+      - name: Run unit tests (coverage gate)
         run: npm run test
-
-      - name: Build
-        run: npm run build
