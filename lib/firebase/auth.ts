@@ -3,6 +3,13 @@ import { redirect } from "next/navigation";
 
 const SESSION_COOKIE_NAME = "finctrl_session";
 
+export class UnauthenticatedError extends Error {
+  constructor() {
+    super("Unauthenticated");
+    this.name = "UnauthenticatedError";
+  }
+}
+
 export async function requireSession() {
   const cookieStore = await cookies();
   const session = cookieStore.get(SESSION_COOKIE_NAME)?.value;
@@ -35,6 +42,29 @@ export async function getSessionUid() {
   const uid = payload?.uid ?? payload?.user_id ?? payload?.sub;
   if (!uid || typeof uid !== "string") {
     throw new Error("Não foi possível identificar o usuário autenticado pela sessão.");
+  }
+
+  return uid;
+}
+
+/**
+ * API-safe version of getSessionUid. Returns the authenticated user's UID or
+ * throws UnauthenticatedError when the session cookie is missing or invalid.
+ * Must only be used inside Route Handlers (never redirects).
+ */
+export async function getApiSessionUid(): Promise<string> {
+  const cookieStore = await cookies();
+  const session = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (!session) {
+    throw new UnauthenticatedError();
+  }
+
+  const payload = decodeJwtPayload(session);
+  const uid = payload?.uid ?? payload?.user_id ?? payload?.sub;
+
+  if (!uid || typeof uid !== "string") {
+    throw new UnauthenticatedError();
   }
 
   return uid;

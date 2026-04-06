@@ -14,3 +14,4 @@ serviceAccountKey.json
 
 # Logs
 *.log
+tsconfig.tsbuildinfo
