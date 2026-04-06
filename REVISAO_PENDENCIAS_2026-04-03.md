@@ -10,7 +10,21 @@ Ainda assim, para virar uma plataforma pronta para operação comercial, faltam 
 3. **Onboarding guiado** para primeiro uso do cliente final.
 4. **Versionamento público de produto** (changelog e notas por release).
 
-## 2) Pendências priorizadas
+## 2) Diagnóstico rápido das pendências (baseado no código atual)
+
+### Evidências observadas
+
+- As páginas de módulos estão focadas em leitura/listagem de dados.
+- Os repositórios de dados existentes estão centrados em função `list*`.
+- Ainda não há fluxo completo de CRUD exposto na UI para os quatro módulos.
+
+### Impacto direto no produto
+
+- O usuário consegue visualizar, mas ainda não conclui o ciclo de gestão financeira sem fricção.
+- Falta robustez de UX para erros e estados vazios guiados.
+- O produto ainda depende de evolução do onboarding para aumentar ativação e retenção.
+
+## 3) Pendências priorizadas
 
 ### P0 — Produto mínimo vendável (foco imediato)
 
@@ -54,27 +68,16 @@ Ainda assim, para virar uma plataforma pronta para operação comercial, faltam 
    - Compartilhamento de progresso e relatórios.
    - Recomendações com IA explicável.
 
-## 3) Plano de execução sugerido (4 ciclos)
+## 4) Plano de sprints recomendado
 
-### Ciclo 1 (1–2 semanas) — Base comercial
-- Entregar CRUD de despesas e dívidas.
-- Ajustar feedbacks de erro na UI.
-- Consolidar responsividade mobile/tablet.
+O plano detalhado para execução está em **`SPRINTS_2026_Q2.md`**, com quatro sprints de duas semanas:
 
-### Ciclo 2 (1–2 semanas) — Completar núcleo financeiro
-- Entregar CRUD de metas e FGTS.
-- Revisar dashboard e plano com dados reais de ponta a ponta.
+- Sprint 1: CRUD de despesas e dívidas.
+- Sprint 2: CRUD de metas e FGTS + responsividade.
+- Sprint 3: onboarding e ativação.
+- Sprint 4: release management e qualidade contínua.
 
-### Ciclo 3 (1 semana) — Onboarding e ativação
-- Entregar tutorial guiado com checklist.
-- Publicar guia de primeiro uso e fluxo de ativação.
-
-### Ciclo 4 (contínuo) — Transparência e fidelização
-- Formalizar changelog por versão.
-- Publicar notas de release para clientes.
-- Rodar rotina quinzenal de melhorias baseadas em uso.
-
-## 4) Critério de pronto (recomendado)
+## 5) Critério de pronto (recomendado)
 
 Considerar o produto pronto para operação com cliente quando:
 
@@ -83,3 +86,9 @@ Considerar o produto pronto para operação com cliente quando:
 - Onboarding de primeiro uso tiver taxa de conclusão monitorada.
 - Cada release tiver changelog público e comunicado de novidades.
 - Testes de regressão críticos passarem antes de deploy.
+
+## 6) Atualização de execução — início da P1 (04/04/2026)
+
+- ✅ **Métricas de ativação iniciadas**: onboarding passou a registrar eventos de início, conclusão de etapa e conclusão total via endpoint dedicado.
+- ✅ **Onboarding guiado evoluído**: página de primeiros passos agora possui checklist interativo com progresso persistido localmente.
+- 🔜 **Próximo incremento P1**: publicar notas de versão em página dedicada para clientes e ampliar smoke tests de CRUD/autenticação no CI.

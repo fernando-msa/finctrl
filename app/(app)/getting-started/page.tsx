@@ -1,3 +1,5 @@
+import { OnboardingChecklist } from "@/components/getting-started/onboarding-checklist";
+
 export default function GettingStartedPage() {
   return (
     <section className="space-y-4">
@@ -7,6 +9,8 @@ export default function GettingStartedPage() {
           Guia rápido para o primeiro uso: configure sua base, cadastre dados e acompanhe evolução financeira.
         </p>
       </header>
+
+      <OnboardingChecklist />
 
       <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Passo a passo inicial</h2>

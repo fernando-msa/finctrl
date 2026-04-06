@@ -1,5 +1,5 @@
-import { SectionShell } from "@/components/ui/section-shell";
+import { SettingsManager } from "@/components/settings/settings-manager";
 
 export default function SettingsPage() {
-  return <SectionShell title="Settings" description="Módulo settings da arquitetura FinCtrl v2." />;
+  return <SettingsManager />;
 }
