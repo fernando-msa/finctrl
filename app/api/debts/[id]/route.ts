@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { UnauthenticatedError, getApiSessionUid } from "@/lib/firebase/auth";
+import { getSessionUid } from "@/lib/firebase/auth";
 import { deleteDebt, updateDebt } from "@/server/repositories/debts-repository";
 
 const updateDebtSchema = z.object({
@@ -10,38 +10,29 @@ const updateDebtSchema = z.object({
   status: z.enum(["ativa", "quitada", "atraso"]).optional()
 });
 
-export async function PATCH(request: NextRequest, context: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
   try {
-    const uid = await getApiSessionUid();
-    const { id } = context.params;
+    const uid = await getSessionUid();
+    const { id } = await Promise.resolve(context.params);
     const payload = updateDebtSchema.parse(await request.json());
     await updateDebt(uid, id, payload);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    if (error instanceof UnauthenticatedError) {
-      return NextResponse.json({ ok: false, error: "Não autenticado." }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, error: error.issues }, { status: 422 });
-    }
     console.error("[api/debts/:id] erro ao atualizar dívida", error);
-    return NextResponse.json({ ok: false, error: "Não foi possível atualizar a dívida." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Não foi possível atualizar a dívida." }, { status: 400 });
   }
 }
 
-export async function DELETE(_request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
   try {
-    const uid = await getApiSessionUid();
-    const { id } = context.params;
+    const uid = await getSessionUid();
+    const { id } = await Promise.resolve(context.params);
     await deleteDebt(uid, id);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    if (error instanceof UnauthenticatedError) {
-      return NextResponse.json({ ok: false, error: "Não autenticado." }, { status: 401 });
-    }
     console.error("[api/debts/:id] erro ao excluir dívida", error);
-    return NextResponse.json({ ok: false, error: "Não foi possível excluir a dívida." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Não foi possível excluir a dívida." }, { status: 400 });
   }
 }

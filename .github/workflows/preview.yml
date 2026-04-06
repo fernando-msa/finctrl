@@ -28,6 +28,9 @@ jobs:
           node-version: "20.x"
           cache: npm
 
+      - name: Clean npm cache
+        run: npm cache clean --force
+
       - name: Install Vercel CLI
         run: npm install --global vercel@37.0.0
 
