@@ -4,6 +4,13 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.3.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.3...finctrl-v2-v2.3.0) (2026-04-04)
+
+
+### Features
+
+* inicia P1 com métricas e checklist de onboarding ([90592c4](https://github.com/fernando-msa/finctrl/commit/90592c4951349619b33c1a60600333b9a1b8f0b4))
+
 ## [2.2.3](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.2...finctrl-v2-v2.2.3) (2026-04-04)
 
 
