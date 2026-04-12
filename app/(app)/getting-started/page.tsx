@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { OnboardingChecklist } from "@/components/getting-started/onboarding-checklist";
 
 export default function GettingStartedPage() {
@@ -31,7 +32,7 @@ export default function GettingStartedPage() {
           <li>Atualizar dados ao menos 1x por semana.</li>
           <li>Registrar mudanças de renda e despesas no mesmo dia.</li>
           <li>Revisar plano de ação quinzenalmente.</li>
-          <li>Acompanhar changelog a cada release para conhecer novidades e correções.</li>
+          <li>Conferir a página <Link className="underline" href="/releases">Novidades da versão</Link> a cada release.</li>
         </ul>
       </article>
     </section>

@@ -92,3 +92,51 @@ Considerar o produto pronto para operação com cliente quando:
 - ✅ **Métricas de ativação iniciadas**: onboarding passou a registrar eventos de início, conclusão de etapa e conclusão total via endpoint dedicado.
 - ✅ **Onboarding guiado evoluído**: página de primeiros passos agora possui checklist interativo com progresso persistido localmente.
 - 🔜 **Próximo incremento P1**: publicar notas de versão em página dedicada para clientes e ampliar smoke tests de CRUD/autenticação no CI.
+
+## 7) Checagem de aderência com o projeto (12/04/2026)
+
+Após revisão do código atual, o direcionamento estratégico do documento continua válido, mas com **status operacional mais avançado** do que o diagnóstico inicial:
+
+- O App Router está ativo e os módulos principais existem em rotas dedicadas.
+- Já há endpoints API para `expenses`, `debts`, `goals` e `fgts`, indicando evolução concreta de CRUD no backend.
+- O onboarding guiado já está publicado em `Primeiros passos` e com métricas de eventos.
+
+### Decisão
+
+- ✅ **Manter este planejamento como referência oficial de execução**.
+- ▶️ **Executar o próximo incremento P1**: notas de versão públicas + gate mínimo de qualidade por deploy.
+
+### Ação aplicada nesta etapa
+
+- Página pública **`/releases`** adicionada para exibir “Novidades da versão” a partir do `CHANGELOG.md`.
+- Landing page e onboarding passaram a apontar explicitamente para essa página.
+
+## 8) Quanto falta para concluir o plano (estimativa em 12/04/2026)
+
+### Progresso macro
+
+- **P0 (MVP operacional): ~70% concluído**
+  - Backend/API de CRUD dos 4 módulos está implementado.
+  - Parte relevante de UX de erro já existe nas páginas.
+  - Pendências principais: validação de responsividade ponta a ponta e fechamento de lacunas de UX em estados vazios.
+- **P1 (confiabilidade e operação): ~65% concluído**
+  - Métricas de onboarding iniciadas.
+  - Página pública de novidades da versão publicada (`/releases`).
+  - Pendência principal: smoke e2e mínimo (autenticação + CRUD essencial) no pipeline.
+- **P2 (diferenciais): ~0–10% concluído**
+  - Itens estratégicos ainda no backlog (gamificação, alertas e simulações avançadas).
+
+### Estimativa geral do roadmap Q2
+
+- **Concluído:** ~55%
+- **Restante:** ~45%
+
+### Próximas 3 entregas objetivas (ordem recomendada)
+
+1. **Smoke e2e no CI**
+   - ✅ Primeira camada aplicada: smoke de landing, releases e redirecionamento de rota privada sem sessão.
+   - 🔜 Próximo passo: ampliar para criação/edição/exclusão de `expenses` e `debts` com sessão de teste.
+2. **Hardening de UX/responsividade**
+   - Revisão mobile/tablet dos fluxos principais (`dashboard`, `expenses`, `debts`, `goals`, `fgts`).
+3. **Fechamento de definição de pronto P0/P1**
+   - Checklists de release e validação por deploy antes de produção.
