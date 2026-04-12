@@ -134,7 +134,8 @@ Após revisão do código atual, o direcionamento estratégico do documento cont
 ### Próximas 3 entregas objetivas (ordem recomendada)
 
 1. **Smoke e2e no CI**
-   - Cobrir login/sessão + criação/edição/exclusão de pelo menos `expenses` e `debts`.
+   - ✅ Primeira camada aplicada: smoke de landing, releases e redirecionamento de rota privada sem sessão.
+   - 🔜 Próximo passo: ampliar para criação/edição/exclusão de `expenses` e `debts` com sessão de teste.
 2. **Hardening de UX/responsividade**
    - Revisão mobile/tablet dos fluxos principais (`dashboard`, `expenses`, `debts`, `goals`, `fgts`).
 3. **Fechamento de definição de pronto P0/P1**
