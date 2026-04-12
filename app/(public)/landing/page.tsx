@@ -7,12 +7,15 @@ export default function LandingPage() {
       <p className="max-w-2xl text-lg text-slate-700">
         Plataforma de controle financeiro com foco em segurança, recomendações inteligentes e isolamento total de dados por usuário.
       </p>
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4">
         <Link className="rounded bg-brand-500 px-4 py-2 font-semibold text-white" href="/login">
           Entrar com Google
         </Link>
         <Link className="rounded border border-slate-300 px-4 py-2 font-semibold" href="/dashboard">
           Ver dashboard
+        </Link>
+        <Link className="rounded border border-brand-200 px-4 py-2 font-semibold text-brand-700" href="/releases">
+          Novidades da versão
         </Link>
       </div>
     </main>
