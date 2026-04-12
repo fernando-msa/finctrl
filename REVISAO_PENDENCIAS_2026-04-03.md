@@ -110,3 +110,32 @@ Após revisão do código atual, o direcionamento estratégico do documento cont
 
 - Página pública **`/releases`** adicionada para exibir “Novidades da versão” a partir do `CHANGELOG.md`.
 - Landing page e onboarding passaram a apontar explicitamente para essa página.
+
+## 8) Quanto falta para concluir o plano (estimativa em 12/04/2026)
+
+### Progresso macro
+
+- **P0 (MVP operacional): ~70% concluído**
+  - Backend/API de CRUD dos 4 módulos está implementado.
+  - Parte relevante de UX de erro já existe nas páginas.
+  - Pendências principais: validação de responsividade ponta a ponta e fechamento de lacunas de UX em estados vazios.
+- **P1 (confiabilidade e operação): ~65% concluído**
+  - Métricas de onboarding iniciadas.
+  - Página pública de novidades da versão publicada (`/releases`).
+  - Pendência principal: smoke e2e mínimo (autenticação + CRUD essencial) no pipeline.
+- **P2 (diferenciais): ~0–10% concluído**
+  - Itens estratégicos ainda no backlog (gamificação, alertas e simulações avançadas).
+
+### Estimativa geral do roadmap Q2
+
+- **Concluído:** ~55%
+- **Restante:** ~45%
+
+### Próximas 3 entregas objetivas (ordem recomendada)
+
+1. **Smoke e2e no CI**
+   - Cobrir login/sessão + criação/edição/exclusão de pelo menos `expenses` e `debts`.
+2. **Hardening de UX/responsividade**
+   - Revisão mobile/tablet dos fluxos principais (`dashboard`, `expenses`, `debts`, `goals`, `fgts`).
+3. **Fechamento de definição de pronto P0/P1**
+   - Checklists de release e validação por deploy antes de produção.
