@@ -4,6 +4,19 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.4.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.3.0...finctrl-v2-v2.4.0) (2026-04-12)
+
+
+### Features
+
+* aplica CRUD em metas e fgts e ativa recursos em configurações ([5a51287](https://github.com/fernando-msa/finctrl/commit/5a51287483a66efa3fd2a1a316335978c2cdc8d6))
+
+
+### Bug Fixes
+
+* **lockfile:** correct vite 7.3.2 integrity checksum ([e628bce](https://github.com/fernando-msa/finctrl/commit/e628bce8b483e823ad52a66cf7dbac243dfae62f))
+* **lockfile:** update next 16.2.3 integrity hash ([b5ad302](https://github.com/fernando-msa/finctrl/commit/b5ad302fce840f0e110a0563b833562e2696e96e))
+
 ## [2.3.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.2.3...finctrl-v2-v2.3.0) (2026-04-04)
 
 
