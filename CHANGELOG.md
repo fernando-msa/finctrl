@@ -4,6 +4,20 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.5.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.4.0...finctrl-v2-v2.5.0) (2026-04-17)
+
+
+### Features
+
+* **settings:** persist monthly income and use it in financial summaries ([9b0c144](https://github.com/fernando-msa/finctrl/commit/9b0c144e8e96806e60eaf1e65df2e0c867341f9d))
+
+
+### Bug Fixes
+
+* **ci:** make tsconfig ignoreDeprecations compatible with TS 5.8 ([f7ed27c](https://github.com/fernando-msa/finctrl/commit/f7ed27c23d0fb8ac98e6c036d26eefd84aee7b09))
+* **dev:** restore hooks and typecheck workflow on windows ([3d6a92a](https://github.com/fernando-msa/finctrl/commit/3d6a92af21e4308080c90db986003244db0ef5d9))
+* **quality:** resolve terminal-reported ts, markdown and compatibility issues ([535f438](https://github.com/fernando-msa/finctrl/commit/535f438ca250044774d5b64ece1e577ad8cb9912))
+
 ## [2.4.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.3.0...finctrl-v2-v2.4.0) (2026-04-12)
 
 
