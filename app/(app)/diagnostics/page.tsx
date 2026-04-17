@@ -3,6 +3,7 @@ import { calculateFinancialScore } from "@/features/diagnostics/score";
 import { getSessionUid } from "@/lib/firebase/auth";
 import { listDebts } from "@/server/repositories/debts-repository";
 import { listExpenses } from "@/server/repositories/expenses-repository";
+import { getSettingsProfile } from "@/server/repositories/settings-repository";
 import { Debt, Expense } from "@/types/finance";
 
 function buildRecommendations(params: {
@@ -44,8 +45,16 @@ export default async function DiagnosticsPage() {
 
   let debts: Debt[] = [];
   let expenses: Expense[] = [];
+  let settingsIncome: number | null = null;
   try {
-    [debts, expenses] = await Promise.all([listDebts(uid), listExpenses(uid)]);
+    const [debtsData, expensesData, settings] = await Promise.all([
+      listDebts(uid),
+      listExpenses(uid),
+      getSettingsProfile(uid)
+    ]);
+    debts = debtsData;
+    expenses = expensesData;
+    settingsIncome = settings.monthlyIncome;
   } catch (error) {
     console.error("[diagnostics] falha ao buscar dados no Firestore. Redirecionando para dashboard:", error);
     redirect("/dashboard");
@@ -53,10 +62,11 @@ export default async function DiagnosticsPage() {
 
   const totalDebt = debts.filter((debt) => debt.status !== "quitada").reduce((acc, debt) => acc + debt.principal, 0);
   const totalExpenses = expenses.reduce((acc, expense) => acc + expense.amount, 0);
-  const assumedIncome = Math.max(totalExpenses * 1.3, 1);
-  const debtRatio = Math.min(1, totalDebt / (assumedIncome * 12));
+  const baselineIncome = Math.max(totalExpenses * 1.3, 1);
+  const effectiveIncome = settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome;
+  const debtRatio = Math.min(1, totalDebt / (effectiveIncome * 12));
   const avgInterestRate = debts.length > 0 ? debts.reduce((acc, debt) => acc + debt.annualInterestRate, 0) / debts.length : 0;
-  const incomeCommitted = Math.min(1, totalExpenses / assumedIncome);
+  const incomeCommitted = Math.min(1, totalExpenses / effectiveIncome);
   const savingsCapacity = Math.max(0, 1 - incomeCommitted);
 
   const score = calculateFinancialScore({

@@ -2,6 +2,7 @@ import { getSessionUid } from "@/lib/firebase/auth";
 import { listDebts } from "@/server/repositories/debts-repository";
 import { listExpenses } from "@/server/repositories/expenses-repository";
 import { listGoals } from "@/server/repositories/goals-repository";
+import { getSettingsProfile } from "@/server/repositories/settings-repository";
 
 export async function getDashboardSummary() {
   const emptySummary = {
@@ -28,8 +29,18 @@ export async function getDashboardSummary() {
   let expenses: Awaited<ReturnType<typeof listExpenses>> = [];
   let debts: Awaited<ReturnType<typeof listDebts>> = [];
   let goals: Awaited<ReturnType<typeof listGoals>> = [];
+  let settingsIncome: number | null = null;
   try {
-    [expenses, debts, goals] = await Promise.all([listExpenses(uid), listDebts(uid), listGoals(uid)]);
+    const [expensesData, debtsData, goalsData, settings] = await Promise.all([
+      listExpenses(uid),
+      listDebts(uid),
+      listGoals(uid),
+      getSettingsProfile(uid)
+    ]);
+    expenses = expensesData;
+    debts = debtsData;
+    goals = goalsData;
+    settingsIncome = settings.monthlyIncome;
   } catch (error) {
     console.error("[dashboard] falha ao carregar dados do Firestore. Exibindo resumo vazio.", error);
     return emptySummary;
@@ -38,10 +49,13 @@ export async function getDashboardSummary() {
   const totalExpenses = expenses.reduce((acc, item) => acc + item.amount, 0);
   const openDebts = debts.filter((debt) => debt.status !== "quitada");
   const totalOpenDebt = openDebts.reduce((acc, debt) => acc + debt.principal, 0);
+  const monthlyDebtCommitment = openDebts.reduce((acc, debt) => acc + debt.principal * 0.08, 0);
   const totalGoalsTarget = goals.reduce((acc, goal) => acc + goal.targetAmount, 0);
   const totalGoalsCurrent = goals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const goalsProgress = totalGoalsTarget > 0 ? Math.min(100, Math.round((totalGoalsCurrent / totalGoalsTarget) * 100)) : 0;
-  const monthlyBalance = -(totalExpenses + totalOpenDebt);
+  const baselineIncome = Math.max(totalExpenses * 1.3, 1);
+  const effectiveIncome = settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome;
+  const monthlyBalance = effectiveIncome - totalExpenses - monthlyDebtCommitment;
   const reserve = Math.max(0, monthlyBalance);
 
   return {

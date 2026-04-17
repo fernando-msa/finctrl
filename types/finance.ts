@@ -36,3 +36,11 @@ export type FinancialProfile = {
   incomeCommitted: number;
   savingsCapacity: number;
 };
+
+export type UserSettingsProfile = {
+  displayName: string;
+  currency: "BRL" | "USD" | "EUR";
+  weeklyReminder: boolean;
+  monthlyIncome: number | null;
+  updatedAt?: string;
+};

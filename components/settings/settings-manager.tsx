@@ -6,12 +6,14 @@ type SettingsForm = {
   displayName: string;
   currency: "BRL" | "USD" | "EUR";
   weeklyReminder: boolean;
+  monthlyIncome: string;
 };
 
 const defaultForm: SettingsForm = {
   displayName: "",
   currency: "BRL",
-  weeklyReminder: true
+  weeklyReminder: true,
+  monthlyIncome: ""
 };
 
 export function SettingsManager() {
@@ -27,7 +29,11 @@ export function SettingsManager() {
           setForm({
             displayName: payload.settings.displayName ?? "",
             currency: payload.settings.currency ?? "BRL",
-            weeklyReminder: Boolean(payload.settings.weeklyReminder)
+            weeklyReminder: Boolean(payload.settings.weeklyReminder),
+            monthlyIncome:
+              typeof payload.settings.monthlyIncome === "number" && Number.isFinite(payload.settings.monthlyIncome)
+                ? String(payload.settings.monthlyIncome)
+                : ""
           });
         }
       } catch {
@@ -43,7 +49,10 @@ export function SettingsManager() {
     const response = await fetch("/api/settings/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
+      body: JSON.stringify({
+        ...form,
+        monthlyIncome: form.monthlyIncome.trim() === "" ? null : Number(form.monthlyIncome)
+      })
     });
 
     if (!response.ok) {
@@ -72,6 +81,18 @@ export function SettingsManager() {
             <option value="USD">Dólar (USD)</option>
             <option value="EUR">Euro (EUR)</option>
           </select>
+        </label>
+
+        <label className="block text-sm text-slate-700">Renda mensal (opcional)
+          <input
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            type="number"
+            value={form.monthlyIncome}
+            onChange={(e) => setForm((current) => ({ ...current, monthlyIncome: e.target.value }))}
+          />
         </label>
 
         <label className="flex items-center gap-2 text-sm text-slate-700">
