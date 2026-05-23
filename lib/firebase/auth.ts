@@ -34,8 +34,20 @@ async function verifySessionToken(token: string): Promise<string> {
     }
   }
 
-  const decoded = await verifyIdTokenViaJwks(token);
-  return decoded;
+  // Fallback sem Admin SDK: tenta verificação via JWKS
+  try {
+    return await verifyIdTokenViaJwks(token);
+  } catch (jwksError) {
+    // Em desenvolvimento, permite fallback com payload decodificado (sem verificação de assinatura)
+    if (process.env.NODE_ENV !== "production") {
+      const uid = extractUidFromJwtPayload(token);
+      if (uid) {
+        console.warn("[auth] Fallback sem verificação de assinatura (modo desenvolvimento)");
+        return uid;
+      }
+    }
+    throw new UnauthenticatedError();
+  }
 }
 
 async function verifyIdTokenViaJwks(token: string): Promise<string> {
@@ -76,6 +88,16 @@ function decodeJwtPayloadUnsafe(token: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function extractUidFromJwtPayload(token: string): string | null {
+  const payload = decodeJwtPayloadUnsafe(token);
+  if (!payload) return null;
+
+  const uid = payload.uid ?? payload.user_id ?? payload.sub;
+  if (!uid || typeof uid !== "string") return null;
+
+  return uid;
 }
 
 export async function getSessionUid() {
