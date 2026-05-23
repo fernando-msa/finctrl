@@ -37,7 +37,7 @@ async function verifySessionToken(token: string): Promise<string> {
   // Fallback sem Admin SDK: tenta verificação via JWKS
   try {
     return await verifyIdTokenViaJwks(token);
-  } catch (jwksError) {
+  } catch {
     // Em desenvolvimento, permite fallback com payload decodificado (sem verificação de assinatura)
     if (process.env.NODE_ENV !== "production") {
       const uid = extractUidFromJwtPayload(token);
