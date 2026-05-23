@@ -73,16 +73,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!isProduction && !isAdminConfigured()) {
-      console.warn("[auth/session] Admin SDK indisponível em ambiente local; aplicando fallback temporário sem verificação.");
-      const response = NextResponse.json({
-        ok: true,
-        warning: "Sessão local em modo fallback sem verificação. Configure FIREBASE_* do Admin SDK para validação completa."
-      });
-      setSessionCookie(response, body.idToken);
-      return response;
-    }
-
     return NextResponse.json(
       {
         ok: false,

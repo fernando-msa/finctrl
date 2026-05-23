@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getAdminAuth, isAdminConfigured } from "@/lib/firebase/admin";
 
 const SESSION_COOKIE_NAME = "finctrl_session";
 
@@ -21,7 +22,49 @@ export async function requireSession() {
   return session;
 }
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
+async function verifySessionToken(token: string): Promise<string> {
+  if (isAdminConfigured()) {
+    const adminAuth = getAdminAuth();
+    try {
+      const decoded = await adminAuth.verifySessionCookie(token, true);
+      return decoded.uid;
+    } catch {
+      const decoded = await adminAuth.verifyIdToken(token);
+      return decoded.uid;
+    }
+  }
+
+  const decoded = await verifyIdTokenViaJwks(token);
+  return decoded;
+}
+
+async function verifyIdTokenViaJwks(token: string): Promise<string> {
+  const { createRemoteJWKSet, jwtVerify } = await import("jose");
+
+  const payload = decodeJwtPayloadUnsafe(token);
+  const projectId = typeof payload?.aud === "string" ? payload.aud : null;
+  if (!projectId) {
+    throw new UnauthenticatedError();
+  }
+
+  const jwks = createRemoteJWKSet(
+    new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
+  );
+
+  const { payload: verified } = await jwtVerify(token, jwks, {
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId
+  });
+
+  const uid = verified.uid ?? verified.user_id ?? verified.sub;
+  if (!uid || typeof uid !== "string") {
+    throw new UnauthenticatedError();
+  }
+
+  return uid;
+}
+
+function decodeJwtPayloadUnsafe(token: string): Record<string, unknown> | null {
   const parts = token.split(".");
   if (parts.length < 2) {
     return null;
@@ -37,14 +80,12 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 export async function getSessionUid() {
   const session = await requireSession();
-  const payload = decodeJwtPayload(session);
 
-  const uid = payload?.uid ?? payload?.user_id ?? payload?.sub;
-  if (!uid || typeof uid !== "string") {
+  try {
+    return await verifySessionToken(session);
+  } catch {
     throw new Error("Não foi possível identificar o usuário autenticado pela sessão.");
   }
-
-  return uid;
 }
 
 /**
@@ -60,14 +101,11 @@ export async function getApiSessionUid(): Promise<string> {
     throw new UnauthenticatedError();
   }
 
-  const payload = decodeJwtPayload(session);
-  const uid = payload?.uid ?? payload?.user_id ?? payload?.sub;
-
-  if (!uid || typeof uid !== "string") {
+  try {
+    return await verifySessionToken(session);
+  } catch {
     throw new UnauthenticatedError();
   }
-
-  return uid;
 }
 
 export { SESSION_COOKIE_NAME };

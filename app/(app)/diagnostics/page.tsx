@@ -3,6 +3,7 @@ import { calculateFinancialScore } from "@/features/diagnostics/score";
 import { getSessionUid } from "@/lib/firebase/auth";
 import { listDebts } from "@/server/repositories/debts-repository";
 import { listExpenses } from "@/server/repositories/expenses-repository";
+import { listIncomes } from "@/server/repositories/incomes-repository";
 import { getSettingsProfile } from "@/server/repositories/settings-repository";
 import { Debt, Expense } from "@/types/finance";
 
@@ -46,14 +47,17 @@ export default async function DiagnosticsPage() {
   let debts: Debt[] = [];
   let expenses: Expense[] = [];
   let settingsIncome: number | null = null;
+  let totalIncomes = 0;
   try {
-    const [debtsData, expensesData, settings] = await Promise.all([
+    const [debtsData, expensesData, incomesData, settings] = await Promise.all([
       listDebts(uid),
       listExpenses(uid),
+      listIncomes(uid),
       getSettingsProfile(uid)
     ]);
     debts = debtsData;
     expenses = expensesData;
+    totalIncomes = incomesData.reduce((acc, item) => acc + item.amount, 0);
     settingsIncome = settings.monthlyIncome;
   } catch (error) {
     console.error("[diagnostics] falha ao buscar dados no Firestore. Redirecionando para dashboard:", error);
@@ -63,7 +67,7 @@ export default async function DiagnosticsPage() {
   const totalDebt = debts.filter((debt) => debt.status !== "quitada").reduce((acc, debt) => acc + debt.principal, 0);
   const totalExpenses = expenses.reduce((acc, expense) => acc + expense.amount, 0);
   const baselineIncome = Math.max(totalExpenses * 1.3, 1);
-  const effectiveIncome = settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome;
+  const effectiveIncome = totalIncomes > 0 ? totalIncomes : (settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome);
   const debtRatio = Math.min(1, totalDebt / (effectiveIncome * 12));
   const avgInterestRate = debts.length > 0 ? debts.reduce((acc, debt) => acc + debt.annualInterestRate, 0) / debts.length : 0;
   const incomeCommitted = Math.min(1, totalExpenses / effectiveIncome);

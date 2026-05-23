@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSessionUid } from "@/lib/firebase/auth";
+import { getApiSessionUid, UnauthenticatedError } from "@/lib/firebase/auth";
 import { deleteExpense, updateExpense } from "@/server/repositories/expenses-repository";
 
 const updateExpenseSchema = z.object({
   category: z.enum(["moradia", "transporte", "alimentacao", "saude", "educacao", "lazer", "outros"]).optional(),
+  description: z.string().optional(),
   amount: z.number().positive().optional(),
   recurring: z.boolean().optional(),
   competenceDate: z.string().min(7).optional()
@@ -12,13 +13,16 @@ const updateExpenseSchema = z.object({
 
 export async function PATCH(request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
   try {
-    const uid = await getSessionUid();
+    const uid = await getApiSessionUid();
     const { id } = await Promise.resolve(context.params);
     const payload = updateExpenseSchema.parse(await request.json());
     await updateExpense(uid, id, payload);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      return NextResponse.json({ ok: false, error: "Sessão inválida ou expirada." }, { status: 401 });
+    }
     console.error("[api/expenses/:id] erro ao atualizar despesa", error);
     return NextResponse.json({ ok: false, error: "Não foi possível atualizar a despesa." }, { status: 400 });
   }
@@ -26,12 +30,15 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
 
 export async function DELETE(_request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
   try {
-    const uid = await getSessionUid();
+    const uid = await getApiSessionUid();
     const { id } = await Promise.resolve(context.params);
     await deleteExpense(uid, id);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      return NextResponse.json({ ok: false, error: "Sessão inválida ou expirada." }, { status: 401 });
+    }
     console.error("[api/expenses/:id] erro ao excluir despesa", error);
     return NextResponse.json({ ok: false, error: "Não foi possível excluir a despesa." }, { status: 400 });
   }

@@ -7,9 +7,10 @@ export default async function DashboardPage() {
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-semibold">Dashboard inteligente</h1>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Kpi title="Saldo mensal" value={summary.monthlyBalance} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+        <Kpi title="Receitas" value={summary.totalIncomes} />
         <Kpi title="Gastos totais" value={summary.totalExpenses} />
+        <Kpi title="Saldo mensal" value={summary.monthlyBalance} />
         <Kpi title="Dívidas abertas" value={summary.openDebts} />
         <Kpi title="Progresso de metas" value={summary.goalsProgress} suffix="%" />
       </div>

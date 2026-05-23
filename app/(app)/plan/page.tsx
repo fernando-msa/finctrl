@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUid } from "@/lib/firebase/auth";
 import { listDebts } from "@/server/repositories/debts-repository";
+import { listIncomes } from "@/server/repositories/incomes-repository";
 import { getSettingsProfile } from "@/server/repositories/settings-repository";
 import { generateFinancialPlan } from "@/server/use-cases/generate-plan";
 import { Debt } from "@/types/finance";
@@ -20,12 +21,14 @@ export default async function PlanPage() {
 
   let debts: Debt[] = [];
   let settingsIncome: number | null = null;
+  let totalIncomes = 0;
   try {
-    const [debtsData, settings] = await Promise.all([listDebts(uid), getSettingsProfile(uid)]);
+    const [debtsData, incomesData, settings] = await Promise.all([listDebts(uid), listIncomes(uid), getSettingsProfile(uid)]);
     debts = debtsData;
+    totalIncomes = incomesData.reduce((acc, item) => acc + item.amount, 0);
     settingsIncome = settings.monthlyIncome;
   } catch (error) {
-    console.error("[plan] falha ao buscar dívidas no Firestore. Redirecionando para dashboard:", error);
+    console.error("[plan] falha ao buscar dados no Firestore. Redirecionando para dashboard:", error);
     redirect("/dashboard");
   }
 
@@ -33,7 +36,7 @@ export default async function PlanPage() {
     .filter((debt) => debt.status !== "quitada")
     .reduce((acc, debt) => acc + debt.principal * 0.08, 0);
   const baselineIncome = Math.max(monthlyDebtCommitment * 5, 2000);
-  const effectiveIncome = settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome;
+  const effectiveIncome = totalIncomes > 0 ? totalIncomes : (settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome);
 
   const plan = await generateFinancialPlan({
     uid,

@@ -1,6 +1,7 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAppCheck } from "firebase-admin/app-check";
 
 function getRequiredAdminEnv() {
   const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -42,4 +43,8 @@ export function getAdminAuth() {
 
 export function getAdminDb() {
   return getFirestore(getAdminApp());
+}
+
+export function getAdminAppCheck() {
+  return getAppCheck(getAdminApp());
 }

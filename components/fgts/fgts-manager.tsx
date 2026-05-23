@@ -1,7 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { FgtsEntry } from "@/types/finance";
+import { ListFilters } from "@/components/ui/list-filters";
+import { useListFilters } from "@/components/ui/use-list-filters";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { Pagination, usePagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/components/ui/export-csv-button";
 
 type FgtsForm = Omit<FgtsEntry, "id">;
 
@@ -27,12 +32,44 @@ export function FgtsManager({ initialEntries }: { initialEntries: FgtsEntry[] })
   const [form, setForm] = useState<FgtsForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
 
   const totals = useMemo(() => {
     const totalBalance = entries.reduce((acc, item) => acc + item.balance, 0);
     const birthdayModeCount = entries.filter((item) => item.modality === "saque_aniversario").length;
     return { totalBalance, count: entries.length, birthdayModeCount };
   }, [entries]);
+
+  const exportRows = useMemo(() =>
+    entries.map((e) => [
+      e.accountLabel,
+      modalityLabel[e.modality],
+      e.balance,
+      e.updatedAt
+    ]),
+  [entries]);
+
+  const filterFns = useMemo(() => ({
+    search: (item: FgtsEntry, values: Record<string, string>) =>
+      item.accountLabel.toLowerCase().includes(values.search.toLowerCase()),
+    modality: (item: FgtsEntry, values: Record<string, string>) => item.modality === values.modality
+  }), []);
+
+  const { filterValues, setFilterValues, applyFilters } = useListFilters(filterFns);
+  const filteredEntries = useMemo(() => applyFilters(entries), [entries, applyFilters]);
+  const { paginatedItems: paginatedEntries, totalPages, safePage } = usePagination(filteredEntries, page);
+
+  useEffect(() => { setPage(1); }, [filterValues]);
+
+  function startEdit(entry: FgtsEntry) {
+    setEditingId(entry.id);
+    setForm({
+      accountLabel: entry.accountLabel,
+      balance: entry.balance,
+      modality: entry.modality,
+      updatedAt: entry.updatedAt
+    });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,19 +138,38 @@ export function FgtsManager({ initialEntries }: { initialEntries: FgtsEntry[] })
         </div>
       </form>
 
-      <article className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600"><tr><th className="px-4 py-3">Conta</th><th className="px-4 py-3">Modalidade</th><th className="px-4 py-3">Saldo</th><th className="px-4 py-3">Atualizado em</th><th className="px-4 py-3">Ações</th></tr></thead>
-          <tbody>
-            {entries.length === 0 ? <tr><td className="px-4 py-6 text-center text-slate-500" colSpan={5}>Nenhum registro de FGTS cadastrado ainda.</td></tr> : entries.map((entry) => (
-              <tr className="border-t border-slate-100" key={entry.id}>
-                <td className="px-4 py-3">{entry.accountLabel}</td><td className="px-4 py-3">{modalityLabel[entry.modality]}</td><td className="px-4 py-3">{formatCurrency(entry.balance)}</td><td className="px-4 py-3">{entry.updatedAt}</td>
-                <td className="px-4 py-3"><div className="flex gap-2"><button className="rounded-md border border-slate-300 px-2 py-1" type="button" onClick={() => { setEditingId(entry.id); setForm({ accountLabel: entry.accountLabel, balance: entry.balance, modality: entry.modality, updatedAt: entry.updatedAt }); }}>Editar</button><button className="rounded-md border border-red-300 px-2 py-1 text-red-700" type="button" onClick={() => removeEntry(entry.id)}>Excluir</button></div></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </article>
+      <ListFilters
+        fields={[
+          { key: "search", label: "Buscar", type: "text", placeholder: "Buscar por conta..." },
+          { key: "modality", label: "Todas as modalidades", type: "select", options: Object.entries(modalityLabel).map(([value, label]) => ({ value, label })) }
+        ]}
+        values={filterValues}
+        onChange={setFilterValues}
+        resultCount={filteredEntries.length}
+        totalCount={entries.length}
+      />
+
+      <div className="flex justify-end">
+        <ExportCsvButton filename="fgts" headers={["Conta", "Modalidade", "Saldo", "Atualizado em"]} rows={exportRows} />
+      </div>
+
+      <ResponsiveTable
+        columns={[
+          { key: "account", label: "Conta", render: (entry: FgtsEntry) => entry.accountLabel },
+          { key: "modality", label: "Modalidade", render: (entry: FgtsEntry) => modalityLabel[entry.modality] },
+          { key: "balance", label: "Saldo", render: (entry: FgtsEntry) => formatCurrency(entry.balance), className: "font-medium text-slate-900" },
+          { key: "updatedAt", label: "Atualizado em", render: (entry: FgtsEntry) => entry.updatedAt }
+        ]}
+        data={paginatedEntries}
+        actions={[
+          { label: "Editar", onClick: startEdit },
+          { label: "Excluir", onClick: (entry: FgtsEntry) => removeEntry(entry.id), variant: "danger" }
+        ]}
+        emptyMessage={entries.length === 0 ? "Nenhum registro de FGTS cadastrado ainda." : "Nenhum registro encontrado com os filtros aplicados."}
+        keyExtractor={(entry) => entry.id}
+      />
+
+      <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setPage} />
     </section>
   );
 }
