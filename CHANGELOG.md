@@ -4,6 +4,13 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.6.1](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.6.0...finctrl-v2-v2.6.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* **security:** extend date validation to goals/fgts and sync CSP to vercel.json ([4f1e95f](https://github.com/fernando-msa/finctrl/commit/4f1e95fff2a3439bbac6b32abb47d6feadb50448))
+
 ## [2.6.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.5.0...finctrl-v2-v2.6.0) (2026-06-01)
 
 
