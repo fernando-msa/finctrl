@@ -4,6 +4,20 @@ Todas as mudanças relevantes do FinCtrl devem ser registradas aqui para transpa
 
 Este projeto segue o padrão de versionamento semântico (`MAJOR.MINOR.PATCH`).
 
+## [2.6.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.5.0...finctrl-v2-v2.6.0) (2026-06-01)
+
+
+### Features
+
+* security hardening, proxy tests, and professional README ([0be74ea](https://github.com/fernando-msa/finctrl/commit/0be74ea102b9a07e3e9e44bf9513e878e587513d))
+* security hardening, unit tests, and feature completeness ([13034cc](https://github.com/fernando-msa/finctrl/commit/13034cce69a3368a2d1811ae1ea86ce4bcd5cb02))
+
+
+### Bug Fixes
+
+* **auth:** restore dev fallback for JWT verification without Admin SDK ([8aae1a1](https://github.com/fernando-msa/finctrl/commit/8aae1a10b5b1e7a8c77bd624d33a8aaf99997ba4))
+* **lint:** remove unused catch binding ([d2ffb95](https://github.com/fernando-msa/finctrl/commit/d2ffb95c0f72031b4a8bb3675be618f2746bdccd))
+
 ## [2.5.0](https://github.com/fernando-msa/finctrl/compare/finctrl-v2-v2.4.0...finctrl-v2-v2.5.0) (2026-04-17)
 
 
