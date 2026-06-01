@@ -1,6 +1,7 @@
 export type Expense = {
   id: string;
   category: "moradia" | "transporte" | "alimentacao" | "saude" | "educacao" | "lazer" | "outros";
+  description: string;
   amount: number;
   recurring: boolean;
   competenceDate: string;
@@ -35,6 +36,15 @@ export type FinancialProfile = {
   avgInterestRate: number;
   incomeCommitted: number;
   savingsCapacity: number;
+};
+
+export type Income = {
+  id: string;
+  sourceCategory: "salario" | "freelance" | "aluguel" | "investimentos" | "aposentadoria" | "outros";
+  sourceDescription: string;
+  amount: number;
+  recurring: boolean;
+  competenceDate: string;
 };
 
 export type UserSettingsProfile = {

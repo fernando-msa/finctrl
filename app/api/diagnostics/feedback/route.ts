@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { validateAppCheck } from "@/lib/firebase/app-check";
+import { AppCheckError, validateAppCheck } from "@/lib/firebase/app-check";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 const feedbackSchema = z.object({
   message: z.string().min(5).max(500),
@@ -8,10 +9,25 @@ const feedbackSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const appCheckToken = request.headers.get("x-firebase-appcheck") ?? undefined;
-  validateAppCheck(appCheckToken);
+  try {
+    const appCheckToken = request.headers.get("x-firebase-appcheck") ?? undefined;
+    await validateAppCheck(appCheckToken);
 
-  const payload = feedbackSchema.parse(await request.json());
+    const payload = feedbackSchema.parse(await request.json());
 
-  return NextResponse.json({ ok: true, payload });
+    const adminDb = getAdminDb();
+    const ref = adminDb.collection("feedback").doc();
+    await ref.set({
+      ...payload,
+      createdAt: new Date().toISOString()
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof AppCheckError) {
+      return NextResponse.json({ ok: false, error: "App Check inválido." }, { status: 403 });
+    }
+    console.error("[api/diagnostics/feedback] erro:", error);
+    return NextResponse.json({ ok: false, error: "Erro ao enviar feedback." }, { status: 400 });
+  }
 }

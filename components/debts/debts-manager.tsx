@@ -1,7 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Debt } from "@/types/finance";
+import { ListFilters } from "@/components/ui/list-filters";
+import { useListFilters } from "@/components/ui/use-list-filters";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { Pagination, usePagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/components/ui/export-csv-button";
 
 type DebtForm = Omit<Debt, "id">;
 
@@ -28,6 +33,7 @@ export function DebtsManager({ initialDebts }: { initialDebts: Debt[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const totals = useMemo(() => {
     const openDebts = debts.filter((debt) => debt.status !== "quitada");
@@ -36,6 +42,27 @@ export function DebtsManager({ initialDebts }: { initialDebts: Debt[] }) {
 
     return { openPrincipal, openCount: openDebts.length, averageRate };
   }, [debts]);
+
+  const exportRows = useMemo(() =>
+    debts.map((d) => [
+      d.creditor,
+      d.principal,
+      `${d.annualInterestRate.toFixed(2)}%`,
+      statusLabel[d.status]
+    ]),
+  [debts]);
+
+  const filterFns = useMemo(() => ({
+    search: (item: Debt, values: Record<string, string>) =>
+      item.creditor.toLowerCase().includes(values.search.toLowerCase()),
+    status: (item: Debt, values: Record<string, string>) => item.status === values.status
+  }), []);
+
+  const { filterValues, setFilterValues, applyFilters } = useListFilters(filterFns);
+  const filteredDebts = useMemo(() => applyFilters(debts), [debts, applyFilters]);
+  const { paginatedItems: paginatedDebts, totalPages, safePage } = usePagination(filteredDebts, page);
+
+  useEffect(() => { setPage(1); }, [filterValues]);
 
   function startEdit(debt: Debt) {
     setEditingId(debt.id);
@@ -204,47 +231,38 @@ export function DebtsManager({ initialDebts }: { initialDebts: Debt[] }) {
         </div>
       </form>
 
-      <article className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
-            <tr>
-              <th className="px-4 py-3 font-medium">Credor</th>
-              <th className="px-4 py-3 font-medium">Principal</th>
-              <th className="px-4 py-3 font-medium">Taxa anual</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {debts.length === 0 ? (
-              <tr>
-                <td className="px-4 py-6 text-center text-slate-500" colSpan={5}>
-                  Nenhuma dívida cadastrada ainda.
-                </td>
-              </tr>
-            ) : (
-              debts.map((debt) => (
-                <tr className="border-t border-slate-100" key={debt.id}>
-                  <td className="px-4 py-3">{debt.creditor}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{formatCurrency(debt.principal)}</td>
-                  <td className="px-4 py-3">{debt.annualInterestRate.toFixed(2)}%</td>
-                  <td className="px-4 py-3">{statusLabel[debt.status]}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button className="rounded-md border border-slate-300 px-2 py-1" type="button" onClick={() => startEdit(debt)}>
-                        Editar
-                      </button>
-                      <button className="rounded-md border border-red-300 px-2 py-1 text-red-700" type="button" onClick={() => removeDebt(debt.id)}>
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </article>
+      <ListFilters
+        fields={[
+          { key: "search", label: "Buscar", type: "text", placeholder: "Buscar por credor..." },
+          { key: "status", label: "Todos os status", type: "select", options: Object.entries(statusLabel).map(([value, label]) => ({ value, label })) }
+        ]}
+        values={filterValues}
+        onChange={setFilterValues}
+        resultCount={filteredDebts.length}
+        totalCount={debts.length}
+      />
+
+      <div className="flex justify-end">
+        <ExportCsvButton filename="dividas" headers={["Credor", "Principal", "Taxa anual", "Status"]} rows={exportRows} />
+      </div>
+
+      <ResponsiveTable
+        columns={[
+          { key: "creditor", label: "Credor", render: (debt: Debt) => debt.creditor },
+          { key: "principal", label: "Principal", render: (debt: Debt) => formatCurrency(debt.principal), className: "font-medium text-slate-900" },
+          { key: "rate", label: "Taxa anual", render: (debt: Debt) => `${debt.annualInterestRate.toFixed(2)}%` },
+          { key: "status", label: "Status", render: (debt: Debt) => statusLabel[debt.status] }
+        ]}
+        data={paginatedDebts}
+        actions={[
+          { label: "Editar", onClick: startEdit },
+          { label: "Excluir", onClick: (debt: Debt) => removeDebt(debt.id), variant: "danger" }
+        ]}
+        emptyMessage={debts.length === 0 ? "Nenhuma dívida cadastrada ainda." : "Nenhuma dívida encontrada com os filtros aplicados."}
+        keyExtractor={(debt) => debt.id}
+      />
+
+      <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setPage} />
     </section>
   );
 }

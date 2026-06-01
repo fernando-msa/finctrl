@@ -2,15 +2,18 @@ import { getSessionUid } from "@/lib/firebase/auth";
 import { listDebts } from "@/server/repositories/debts-repository";
 import { listExpenses } from "@/server/repositories/expenses-repository";
 import { listGoals } from "@/server/repositories/goals-repository";
+import { listIncomes } from "@/server/repositories/incomes-repository";
 import { getSettingsProfile } from "@/server/repositories/settings-repository";
 
 export async function getDashboardSummary() {
   const emptySummary = {
     monthlyBalance: 0,
     totalExpenses: 0,
+    totalIncomes: 0,
     openDebts: 0,
     goalsProgress: 0,
     chart: [
+      { name: "Receitas", value: 0 },
       { name: "Gastos", value: 0 },
       { name: "Dívidas", value: 0 },
       { name: "Metas", value: 0 },
@@ -29,17 +32,20 @@ export async function getDashboardSummary() {
   let expenses: Awaited<ReturnType<typeof listExpenses>> = [];
   let debts: Awaited<ReturnType<typeof listDebts>> = [];
   let goals: Awaited<ReturnType<typeof listGoals>> = [];
+  let incomes: Awaited<ReturnType<typeof listIncomes>> = [];
   let settingsIncome: number | null = null;
   try {
-    const [expensesData, debtsData, goalsData, settings] = await Promise.all([
+    const [expensesData, debtsData, goalsData, incomesData, settings] = await Promise.all([
       listExpenses(uid),
       listDebts(uid),
       listGoals(uid),
+      listIncomes(uid),
       getSettingsProfile(uid)
     ]);
     expenses = expensesData;
     debts = debtsData;
     goals = goalsData;
+    incomes = incomesData;
     settingsIncome = settings.monthlyIncome;
   } catch (error) {
     console.error("[dashboard] falha ao carregar dados do Firestore. Exibindo resumo vazio.", error);
@@ -47,6 +53,7 @@ export async function getDashboardSummary() {
   }
 
   const totalExpenses = expenses.reduce((acc, item) => acc + item.amount, 0);
+  const totalIncomes = incomes.reduce((acc, item) => acc + item.amount, 0);
   const openDebts = debts.filter((debt) => debt.status !== "quitada");
   const totalOpenDebt = openDebts.reduce((acc, debt) => acc + debt.principal, 0);
   const monthlyDebtCommitment = openDebts.reduce((acc, debt) => acc + debt.principal * 0.08, 0);
@@ -54,16 +61,18 @@ export async function getDashboardSummary() {
   const totalGoalsCurrent = goals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const goalsProgress = totalGoalsTarget > 0 ? Math.min(100, Math.round((totalGoalsCurrent / totalGoalsTarget) * 100)) : 0;
   const baselineIncome = Math.max(totalExpenses * 1.3, 1);
-  const effectiveIncome = settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome;
+  const effectiveIncome = totalIncomes > 0 ? totalIncomes : (settingsIncome && settingsIncome > 0 ? settingsIncome : baselineIncome);
   const monthlyBalance = effectiveIncome - totalExpenses - monthlyDebtCommitment;
   const reserve = Math.max(0, monthlyBalance);
 
   return {
     monthlyBalance,
     totalExpenses,
+    totalIncomes,
     openDebts: openDebts.length,
     goalsProgress,
     chart: [
+      { name: "Receitas", value: totalIncomes },
       { name: "Gastos", value: totalExpenses },
       { name: "Dívidas", value: totalOpenDebt },
       { name: "Metas", value: totalGoalsCurrent },

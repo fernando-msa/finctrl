@@ -1,7 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Expense } from "@/types/finance";
+import { ListFilters } from "@/components/ui/list-filters";
+import { useListFilters } from "@/components/ui/use-list-filters";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { Pagination, usePagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/components/ui/export-csv-button";
 
 const categoryLabel: Record<string, string> = {
   moradia: "Moradia",
@@ -17,6 +22,7 @@ type ExpenseForm = Omit<Expense, "id">;
 
 const emptyForm: ExpenseForm = {
   category: "moradia",
+  description: "",
   amount: 0,
   recurring: false,
   competenceDate: ""
@@ -32,6 +38,27 @@ export function ExpensesManager({ initialExpenses }: { initialExpenses: Expense[
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [showReplicate, setShowReplicate] = useState(false);
+  const [replicateFrom, setReplicateFrom] = useState("");
+  const [replicateTo, setReplicateTo] = useState("");
+  const [replicateMessage, setReplicateMessage] = useState("");
+  const [page, setPage] = useState(1);
+
+  const filterFns = useMemo(() => ({
+    search: (item: Expense, values: Record<string, string>) => {
+      const q = values.search.toLowerCase();
+      return (item.description ?? "").toLowerCase().includes(q)
+        || (categoryLabel[item.category] ?? "").toLowerCase().includes(q);
+    },
+    category: (item: Expense, values: Record<string, string>) => item.category === values.category,
+    competence: (item: Expense, values: Record<string, string>) => item.competenceDate === values.competence
+  }), []);
+
+  const { filterValues, setFilterValues, applyFilters } = useListFilters(filterFns);
+  const filteredExpenses = useMemo(() => applyFilters(expenses), [expenses, applyFilters]);
+  const { paginatedItems: paginatedExpenses, totalPages, safePage } = usePagination(filteredExpenses, page);
+
+  useEffect(() => { setPage(1); }, [filterValues]);
 
   const totals = useMemo(() => {
     const total = expenses.reduce((acc, item) => acc + item.amount, 0);
@@ -39,10 +66,21 @@ export function ExpensesManager({ initialExpenses }: { initialExpenses: Expense[
     return { total, recurring, count: expenses.length };
   }, [expenses]);
 
+  const exportRows = useMemo(() =>
+    expenses.map((e) => [
+      categoryLabel[e.category] ?? e.category,
+      e.description ?? "",
+      e.amount,
+      e.competenceDate,
+      e.recurring ? "Recorrente" : "Pontual"
+    ]),
+  [expenses]);
+
   function startEdit(expense: Expense) {
     setEditingId(expense.id);
     setForm({
       category: expense.category,
+      description: expense.description ?? "",
       amount: expense.amount,
       recurring: expense.recurring,
       competenceDate: expense.competenceDate
@@ -128,6 +166,41 @@ export function ExpensesManager({ initialExpenses }: { initialExpenses: Expense[
     }
   }
 
+  async function handleReplicate() {
+    if (!replicateFrom || !replicateTo) {
+      setError("Preencha os meses de origem e destino.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setReplicateMessage("");
+
+    try {
+      const response = await fetch("/api/expenses/replicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromMonth: replicateFrom, toMonth: replicateTo })
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error ?? "Falha ao replicar despesas.");
+      }
+
+      setReplicateMessage(result.message);
+      setShowReplicate(false);
+      setReplicateFrom("");
+      setReplicateTo("");
+
+      window.location.reload();
+    } catch (replicateError) {
+      setError(replicateError instanceof Error ? replicateError.message : "Erro inesperado ao replicar despesas.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <section className="space-y-4">
       <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -140,6 +213,57 @@ export function ExpensesManager({ initialExpenses }: { initialExpenses: Expense[
           <Kpi label="Itens" value={String(totals.count)} />
         </div>
       </header>
+
+      {replicateMessage ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{replicateMessage}</p> : null}
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <button
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          onClick={() => setShowReplicate((v) => !v)}
+        >
+          {showReplicate ? "Fechar replicação" : "Replicar recorrentes"}
+        </button>
+
+        {showReplicate ? (
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="text-sm text-slate-700">
+              Mês origem
+              <input
+                className="mt-1 block rounded-md border border-slate-300 px-3 py-1.5"
+                inputMode="numeric"
+                pattern="\\d{4}-(0[1-9]|1[0-2])"
+                placeholder="2026-04"
+                title="Formato YYYY-MM"
+                type="text"
+                value={replicateFrom}
+                onChange={(e) => setReplicateFrom(e.target.value)}
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              Mês destino
+              <input
+                className="mt-1 block rounded-md border border-slate-300 px-3 py-1.5"
+                inputMode="numeric"
+                pattern="\\d{4}-(0[1-9]|1[0-2])"
+                placeholder="2026-05"
+                title="Formato YYYY-MM"
+                type="text"
+                value={replicateTo}
+                onChange={(e) => setReplicateTo(e.target.value)}
+              />
+            </label>
+            <button
+              className="rounded-md bg-brand-600 px-4 py-1.5 text-sm text-white disabled:opacity-60"
+              disabled={loading}
+              type="button"
+              onClick={handleReplicate}
+            >
+              {loading ? "Replicando..." : "Replicar"}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <form className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" onSubmit={submitForm}>
         <h2 className="text-lg font-semibold text-slate-900">{editingId ? "Editar despesa" : "Nova despesa"}</h2>
@@ -158,6 +282,17 @@ export function ExpensesManager({ initialExpenses }: { initialExpenses: Expense[
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Descrição
+            <input
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              placeholder="Ex: Aluguel apto 301, Mercado semanal..."
+              type="text"
+              value={form.description}
+              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+            />
           </label>
 
           <label className="text-sm text-slate-700">
@@ -212,47 +347,40 @@ export function ExpensesManager({ initialExpenses }: { initialExpenses: Expense[
         </div>
       </form>
 
-      <article className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
-            <tr>
-              <th className="px-4 py-3 font-medium">Categoria</th>
-              <th className="px-4 py-3 font-medium">Valor</th>
-              <th className="px-4 py-3 font-medium">Competência</th>
-              <th className="px-4 py-3 font-medium">Tipo</th>
-              <th className="px-4 py-3 font-medium">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expenses.length === 0 ? (
-              <tr>
-                <td className="px-4 py-6 text-center text-slate-500" colSpan={5}>
-                  Nenhuma despesa cadastrada ainda.
-                </td>
-              </tr>
-            ) : (
-              expenses.map((expense) => (
-                <tr className="border-t border-slate-100" key={expense.id}>
-                  <td className="px-4 py-3">{categoryLabel[expense.category] ?? expense.category}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{formatCurrency(expense.amount)}</td>
-                  <td className="px-4 py-3">{expense.competenceDate}</td>
-                  <td className="px-4 py-3">{expense.recurring ? "Recorrente" : "Pontual"}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button className="rounded-md border border-slate-300 px-2 py-1" type="button" onClick={() => startEdit(expense)}>
-                        Editar
-                      </button>
-                      <button className="rounded-md border border-red-300 px-2 py-1 text-red-700" type="button" onClick={() => removeExpense(expense.id)}>
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </article>
+      <ListFilters
+        fields={[
+          { key: "search", label: "Buscar", type: "text", placeholder: "Buscar por descrição ou categoria..." },
+          { key: "category", label: "Todas as categorias", type: "select", options: Object.entries(categoryLabel).map(([value, label]) => ({ value, label })) },
+          { key: "competence", label: "Todas as competências", type: "select", options: [...new Set(expenses.map((e) => e.competenceDate))].sort().reverse().map((d) => ({ value: d, label: d })) }
+        ]}
+        values={filterValues}
+        onChange={setFilterValues}
+        resultCount={filteredExpenses.length}
+        totalCount={expenses.length}
+      />
+
+      <div className="flex justify-end">
+        <ExportCsvButton filename="despesas" headers={["Categoria", "Descrição", "Valor", "Competência", "Tipo"]} rows={exportRows} />
+      </div>
+
+      <ResponsiveTable
+        columns={[
+          { key: "category", label: "Categoria", render: (expense: Expense) => categoryLabel[expense.category] ?? expense.category },
+          { key: "description", label: "Descrição", render: (expense: Expense) => expense.description || "—", className: "text-slate-600" },
+          { key: "amount", label: "Valor", render: (expense: Expense) => formatCurrency(expense.amount), className: "font-medium text-slate-900" },
+          { key: "competence", label: "Competência", render: (expense: Expense) => expense.competenceDate },
+          { key: "type", label: "Tipo", render: (expense: Expense) => expense.recurring ? "Recorrente" : "Pontual" }
+        ]}
+        data={paginatedExpenses}
+        actions={[
+          { label: "Editar", onClick: startEdit },
+          { label: "Excluir", onClick: (expense: Expense) => removeExpense(expense.id), variant: "danger" }
+        ]}
+        emptyMessage={expenses.length === 0 ? "Nenhuma despesa cadastrada ainda." : "Nenhuma despesa encontrada com os filtros aplicados."}
+        keyExtractor={(expense) => expense.id}
+      />
+
+      <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setPage} />
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSessionUid } from "@/lib/firebase/auth";
+import { getApiSessionUid, UnauthenticatedError } from "@/lib/firebase/auth";
 import { deleteDebt, updateDebt } from "@/server/repositories/debts-repository";
 
 const updateDebtSchema = z.object({
@@ -12,13 +12,16 @@ const updateDebtSchema = z.object({
 
 export async function PATCH(request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
   try {
-    const uid = await getSessionUid();
+    const uid = await getApiSessionUid();
     const { id } = await Promise.resolve(context.params);
     const payload = updateDebtSchema.parse(await request.json());
     await updateDebt(uid, id, payload);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      return NextResponse.json({ ok: false, error: "Sessão inválida ou expirada." }, { status: 401 });
+    }
     console.error("[api/debts/:id] erro ao atualizar dívida", error);
     return NextResponse.json({ ok: false, error: "Não foi possível atualizar a dívida." }, { status: 400 });
   }
@@ -26,12 +29,15 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
 
 export async function DELETE(_request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
   try {
-    const uid = await getSessionUid();
+    const uid = await getApiSessionUid();
     const { id } = await Promise.resolve(context.params);
     await deleteDebt(uid, id);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      return NextResponse.json({ ok: false, error: "Sessão inválida ou expirada." }, { status: 401 });
+    }
     console.error("[api/debts/:id] erro ao excluir dívida", error);
     return NextResponse.json({ ok: false, error: "Não foi possível excluir a dívida." }, { status: 400 });
   }

@@ -1,168 +1,301 @@
+<div align="center">
+
 # FinCtrl v2
 
-[![CI](https://github.com/finctrl/finctrl/actions/workflows/ci.yml/badge.svg)](https://github.com/finctrl/finctrl/actions/workflows/ci.yml)
-[![Coverage](https://github.com/finctrl/finctrl/actions/workflows/coverage.yml/badge.svg)](https://github.com/finctrl/finctrl/actions/workflows/coverage.yml)
-[![Deploy - Vercel](https://img.shields.io/badge/deploy-vercel-000000?logo=vercel)](https://vercel.com)
+**Personal Finance Control Platform**
 
-Aplicação web de controle financeiro pessoal com autenticação segura, isolamento por usuário e arquitetura escalável usando Next.js + Firebase.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
+![React](https://img.shields.io/badge/React-19.1-61DAFB?logo=react)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore+Auth-FFCA28?logo=firebase)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-06B6D4?logo=tailwindcss)
+![Vitest](https://img.shields.io/badge/Vitest-3.x-6E9F18?logo=vitest)
+![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?logo=playwright)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
-## Status de consolidação
+[![CI](https://github.com/fernando-msa/finctrl/actions/workflows/ci.yml/badge.svg)](https://github.com/fernando-msa/finctrl/actions/workflows/ci.yml)
+[![Coverage](https://github.com/fernando-msa/finctrl/actions/workflows/coverage.yml/badge.svg)](https://github.com/fernando-msa/finctrl/actions/workflows/coverage.yml)
+[![Deploy](https://img.shields.io/badge/deploy-Vercel-000000?logo=vercel)](https://vercel.com)
 
-- A aplicação canônica está consolidada no App Router (`app/`).
-- URLs legadas HTML (`/pages/*.html` e `/*.html`) são redirecionadas para rotas canônicas.
-- O build web está restrito a páginas TypeScript (`.ts`/`.tsx`) para reduzir risco de regressão do legado.
+![Dashboard Preview](docs/assets/dashboard-preview.svg)
 
-## Stack
+</div>
 
-- Next.js 16 (App Router)
-- TypeScript strict
-- Tailwind CSS
-- Firebase Auth + Firestore + Admin SDK
-- React Hook Form + Zod
-- Recharts
-- Vitest + Playwright
+---
 
-## Screenshots / GIF do Dashboard
+## Overview
 
-> Atualize os arquivos em `docs/assets/` quando tiver capturas reais do ambiente de produção.
+Full-stack web application for personal financial management built with modern TypeScript architecture. Features secure Google authentication, per-user data isolation, automated financial diagnostics, and debt optimization strategies (Avalanche/Snowball).
 
-![Screenshot do dashboard](docs/assets/dashboard-screenshot.svg)
-![Preview animado do dashboard](docs/assets/dashboard-preview.svg)
+**Key highlights:**
+
+- 60 automated tests (unit + integration)
+- CI/CD pipeline with quality gates (lint, typecheck, test, build, smoke E2E)
+- Multi-layer security (session cookies, App Check, Firestore rules, security headers)
+- Responsive design with mobile-first approach
+- Automated release management with semantic versioning
+
+---
+
+## Tech Stack
+
+| Layer          | Technology                                                      |
+| -------------- | --------------------------------------------------------------- |
+| **Framework**  | Next.js 16 (App Router, Server Components)                      |
+| **Language**   | TypeScript 5.8 (strict mode)                                    |
+| **UI**         | React 19.1, Tailwind CSS 3.x                                    |
+| **Forms**      | React Hook Form + Zod validation                                |
+| **Charts**     | Recharts                                                        |
+| **Database**   | Cloud Firestore (Firebase)                                      |
+| **Auth**       | Firebase Auth (Google OAuth) + Admin SDK (server-side sessions) |
+| **Testing**    | Vitest (unit) + Playwright (E2E)                                |
+| **Linting**    | ESLint 9 (flat config) + Prettier                               |
+| **CI/CD**      | GitHub Actions (4 workflows) + Release Please                   |
+| **Deployment** | Vercel                                                          |
+
+---
+
+## Features
+
+### Financial Management
+
+- **Dashboard** — KPI cards + bar chart with income, expenses, debts, goals, and monthly balance
+- **Expenses** — CRUD with 7 categories, recurring flag, monthly replication
+- **Incomes** — 6 source categories with monthly tracking
+- **Debts** — Track creditors, principal, interest rates, and status (active/settled/overdue)
+- **Goals** — Financial targets with progress tracking and due dates
+- **FGTS** — Brazilian employment fund management with modality tracking
+
+### Intelligence
+
+- **Financial Plan** — Automated debt prioritization using Avalanche (highest interest first) or Snowball (smallest balance first) strategies
+- **Diagnostics** — 0-100 financial score based on 4 weighted factors: debt ratio, average interest rate, income commitment, and savings capacity
+- **Smart Dashboard** — Aggregates data from all modules with real-time KPIs
+
+### Security
+
+- **Authentication** — Google OAuth via Firebase Auth with multi-tier server verification (Admin SDK → JWKS fallback)
+- **Session Management** — httpOnly cookies with 5-day TTL, SameSite=Lax, Secure in production
+- **Data Isolation** — Per-user Firestore collections with security rules
+- **App Check** — Firebase App Check validation on sensitive endpoints
+- **Security Headers** — HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- **Input Validation** — Zod schemas on all API routes
+
+---
 
 ## Architecture
 
+```
+finctrl/
+├── app/                          # Next.js App Router
+│   ├── (public)/                 #   Public routes (landing, login, releases)
+│   ├── (app)/                    #   Protected routes (dashboard, expenses, etc.)
+│   │   ├── layout.tsx            #     Sidebar nav + auth guard
+│   │   └── [section]/page.tsx    #     Server components for data fetching
+│   └── api/                      #   REST API routes
+│       ├── auth/                 #     Session management
+│       ├── expenses/             #     CRUD + replication
+│       ├── debts/                #     CRUD
+│       ├── goals/                #     CRUD
+│       ├── fgts/                 #     CRUD
+│       ├── incomes/              #     CRUD
+│       ├── settings/             #     User profile
+│       ├── diagnostics/          #     Feedback (App Check protected)
+│       └── metrics/              #     Analytics events
+├── components/                   # React client components
+│   ├── [section]/                #   Feature-specific managers
+│   └── ui/                       #   Shared UI (nav, table, pagination, filters)
+├── features/                     # Business logic (client-side)
+│   ├── auth/                     #   Google sign-in flow
+│   ├── dashboard/                #   Summary aggregator
+│   └── diagnostics/              #   Financial score calculator
+├── server/                       # Server-side business logic
+│   ├── repositories/             #   Firestore CRUD operations
+│   ├── services/                 #   Domain services (debt prioritization)
+│   └── use-cases/                #   Orchestration (financial plan generation)
+├── lib/                          # Infrastructure
+│   ├── firebase/                 #   Admin SDK, client SDK, auth, App Check
+│   └── export/                   #   CSV export utility
+├── types/                        # TypeScript domain types
+├── tests/
+│   ├── unit/                     #   Vitest unit tests (60 tests)
+│   └── e2e/                      #   Playwright E2E tests
+└── proxy.ts                      # Middleware for route protection
+```
+
+### Data Flow
+
 ```mermaid
 flowchart LR
-  Browser[Cliente Web] --> Next[Next.js App Router]
-  Next --> API[Route Handlers / Server Actions]
-  API --> Service[Services / Use Cases]
-  Service --> Repo[Repositories]
-  Repo --> Firestore[(Cloud Firestore)]
-  Next --> Auth[Firebase Auth]
-  API --> Admin[Firebase Admin SDK]
+    Browser[Browser] -->|Google OAuth| Firebase[Firebase Auth]
+    Browser -->|Session Cookie| Next[Next.js App Router]
+    Next -->|Server Components| Repos[Repositories]
+    Next -->|API Routes| Auth[Auth Middleware]
+    Auth -->|Admin SDK| Firestore[(Firestore)]
+    Repos -->|Admin SDK| Firestore
+    Next -->|Client Components| UI[React Components]
 ```
 
-### Camadas
+### Design Patterns
 
-- **UI (app/components/features):** renderização das páginas e componentes do dashboard.
-- **Application (server/use-cases):** regras de negócio e orquestração dos fluxos.
-- **Data (server/repositories):** acesso ao Firestore por contexto de usuário.
-- **Infra (lib/firebase):** clientes Admin/Client, autenticação e App Check.
+- **Repository Pattern** — Abstracts Firestore access behind typed interfaces
+- **Use Case Layer** — Orchestrates business logic (e.g., financial plan generation)
+- **Server/Client Separation** — Server components for data fetching, client components for interactivity
+- **Multi-tier Auth Fallback** — Admin SDK → JWKS verification → dev-only JWT decode
+- **Zod-first Validation** — All API inputs validated at the boundary
 
-## Estrutura principal
+---
 
-```txt
-app/
-  (public)/
-    landing/page.tsx
-    login/page.tsx
-  (app)/
-    dashboard/page.tsx
-    debts/page.tsx
-    expenses/page.tsx
-    goals/page.tsx
-    fgts/page.tsx
-    plan/page.tsx
-    diagnostics/page.tsx
-    settings/page.tsx
-  api/
-    auth/session/route.ts
-    auth/logout/route.ts
-    diagnostics/feedback/route.ts
-    admin/health/route.ts
-components/
-features/
-lib/firebase/
-server/
-types/
-```
+## Getting Started
 
-## Rotas canônicas
+### Prerequisites
 
-- Públicas: `/landing`, `/login`, `/releases`
-- Privadas: `/dashboard`, `/expenses`, `/debts`, `/goals`, `/fgts`, `/plan`, `/diagnostics`, `/settings`, `/getting-started`
+- Node.js 24.13.1 (see `.nvmrc`)
+- Firebase project with Auth + Firestore enabled
+- Google OAuth credentials
 
-## Segurança adotada
-
-- Session cookie `httpOnly` para sessão do Firebase Admin.
-- Middleware protegendo rotas privadas.
-- Validação de payload com Zod.
-- Validação básica de App Check em endpoint sensível.
-- Firestore Rules com isolamento por `request.auth.uid`.
-
-## Rodando localmente
-
-Requisito de runtime: Node `24.13.1` (ver `.nvmrc`).
-
-No Windows PowerShell, prefira `npm.cmd` para evitar bloqueio por ExecutionPolicy.
+### Installation
 
 ```bash
-npm.cmd ci
-npm.cmd run dev
+git clone https://github.com/fernando-msa/finctrl.git
+cd finctrl
+npm install
+cp .env.example .env.local
 ```
 
-Para habilitar os hooks do Husky no clone local:
+### Environment Variables
+
+```env
+# Client-side (NEXT_PUBLIC_*)
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+
+# Server-side
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+```
+
+### Development
 
 ```bash
-npm.cmd run prepare
+npm run dev          # Start dev server (http://localhost:3000)
+npm run test         # Run unit tests
+npm run test:e2e     # Run E2E tests
+npm run lint         # Lint code
+npm run typecheck    # Type check
+npm run validate     # Full quality check (lint + typecheck + test)
 ```
 
-## Scripts úteis
+---
+
+## Testing
+
+### Unit Tests (Vitest)
+
+60 tests across 11 test files covering:
+
+| Module           | Tests                                       | Coverage |
+| ---------------- | ------------------------------------------- | -------- |
+| Repositories (6) | CRUD operations, replication, normalization | 100%     |
+| Services         | Debt prioritization (avalanche/snowball)    | 100%     |
+| Use Cases        | Financial plan generation                   | 100%     |
+| Features         | Dashboard summary, financial score          | 100%     |
+| Middleware       | Route protection, auth redirects            | 100%     |
 
 ```bash
-npm.cmd run lint
-npm.cmd run typecheck
-npm.cmd run test
-npm.cmd run test:watch
-npm.cmd run test:e2e
-npm.cmd run test:e2e:smoke
-npm.cmd run validate
-npm.cmd run validate:local
+npm run test           # Run all unit tests
+npm run test:watch     # Watch mode
 ```
 
-## Loop local de validação
+### E2E Tests (Playwright)
 
-Use este ciclo curto para evoluir com segurança:
+Smoke tests covering:
 
-1. Desenvolvimento contínuo com `npm.cmd run test:watch`.
-2. Antes de commit/push, rode `npm.cmd run validate`.
-3. Para validar fluxo mínimo da aplicação, rode `npm.cmd run validate:local`.
+- Landing page CTA visibility
+- Public releases page
+- Auth redirect for protected routes
 
-Notas:
-
-- `validate` roda lint + typecheck + testes unitários.
-- `validate:local` roda `validate` e depois smoke e2e.
-- O hook `pre-push` executa `npm run validate` automaticamente.
-
-## Troubleshooting (Windows)
-
-Se ocorrer erro de instalação parcial (`ENOTEMPTY`/`EPERM`) em `node_modules`:
-
-```powershell
-cmd /c rmdir /s /q node_modules
-npm.cmd cache clean --force
-npm.cmd ci
+```bash
+npm run test:e2e:smoke    # Run smoke tests
+npm run test:e2e          # Full E2E suite
 ```
 
-Se aparecer erro de script bloqueado (`npm.ps1`):
+---
 
-- Use `npm.cmd` em vez de `npm`.
+## CI/CD Pipeline
 
-## Releases semânticas
+```mermaid
+flowchart LR
+    PR[Pull Request] --> CI[CI Workflow]
+    CI --> Lint[ESLint]
+    CI --> Type[TypeScript]
+    CI --> Test[Unit Tests]
+    CI --> Build[Next.js Build]
+    CI --> E2E[Smoke E2E]
+    PR --> Preview[Vercel Preview]
+    Merge[Push to main] --> Release[Release Please]
+    Release --> Changelog[CHANGELOG.md]
+    Release --> Tag[Git Tag]
+```
 
-- Pipeline automatizado com **Release Please** (`.github/workflows/release.yml`).
-- Tags com prefixo `v`, por exemplo: `v2.0.0`, `v2.1.0`.
-- Histórico público em [`CHANGELOG.md`](./CHANGELOG.md).
+**4 GitHub Actions workflows:**
 
-## Preview por Pull Request
+- `ci.yml` — Lint, typecheck, test, build, smoke E2E on every PR/push
+- `coverage.yml` — Unit test coverage gate
+- `preview.yml` — Vercel preview deployment per PR
+- `release.yml` — Automated semantic versioning with Release Please
 
-- Cada PR pode gerar um deploy temporário via Vercel (`.github/workflows/preview.yml`).
-- O link do preview é publicado automaticamente nos comentários da PR.
-- Secrets necessários: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+**Git Hooks (Husky):**
 
-## Roadmap sugerido
+- `pre-commit` — ESLint fix + Prettier on staged files
+- `pre-push` — Full validation (lint + typecheck + test)
 
-1. Migrar referências documentais restantes de `pages/*.html` para rotas canônicas do App Router.
-2. Integrar Firebase Emulator Suite no fluxo local para testes determinísticos.
-3. Expandir cobertura de testes (integração de repositórios + e2e autenticado).
-4. Planejar remoção definitiva dos arquivos legados após janela de estabilização.
+---
+
+## Security
+
+| Measure          | Implementation                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| Authentication   | Google OAuth + Firebase Auth + multi-tier server verification                           |
+| Session          | httpOnly cookie, Secure, SameSite=Lax, 5-day TTL                                        |
+| Data Isolation   | Firestore rules: `request.auth.uid == uid`                                              |
+| Input Validation | Zod schemas on all 15+ API routes                                                       |
+| App Check        | Firebase App Check on sensitive endpoints                                               |
+| Headers          | HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
+| Secret Scanning  | Gitleaks in CI                                                                          |
+| Dependency Audit | npm audit in CI                                                                         |
+
+---
+
+## Release History
+
+See [CHANGELOG.md](CHANGELOG.md) for full release history.
+
+| Version | Date       | Highlights                                       |
+| ------- | ---------- | ------------------------------------------------ |
+| v2.5.0  | 2026-04-17 | Settings persistence, monthly income integration |
+| v2.4.0  | 2026-04-12 | Goals + FGTS CRUD, public releases page          |
+| v2.3.0  | 2026-04-10 | Income management, responsive tables, CSV export |
+| v2.2.0  | 2026-04-05 | Debt CRUD, financial plan, diagnostics           |
+| v2.1.0  | 2026-04-02 | Expense replication, dashboard charts            |
+| v2.0.0  | 2026-03-28 | Next.js App Router migration, full rewrite       |
+
+---
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**Built by [Fernando S. De Santana Junior](https://github.com/fernando-msa)**
+
+[LinkedIn](https://linkedin.com/in/fernando-msa) · [GitHub](https://github.com/fernando-msa)
+
+</div>

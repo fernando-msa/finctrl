@@ -1,7 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Goal } from "@/types/finance";
+import { ListFilters } from "@/components/ui/list-filters";
+import { useListFilters } from "@/components/ui/use-list-filters";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { Pagination, usePagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/components/ui/export-csv-button";
 
 type GoalForm = Omit<Goal, "id">;
 
@@ -21,6 +26,7 @@ export function GoalsManager({ initialGoals }: { initialGoals: Goal[] }) {
   const [form, setForm] = useState<GoalForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
 
   const totals = useMemo(() => {
     const totalTarget = goals.reduce((acc, item) => acc + item.targetAmount, 0);
@@ -28,6 +34,36 @@ export function GoalsManager({ initialGoals }: { initialGoals: Goal[] }) {
     const progress = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
     return { totalTarget, totalCurrent, progress };
   }, [goals]);
+
+  const exportRows = useMemo(() =>
+    goals.map((g) => [
+      g.title,
+      g.currentAmount,
+      g.targetAmount,
+      g.dueDate
+    ]),
+  [goals]);
+
+  const filterFns = useMemo(() => ({
+    search: (item: Goal, values: Record<string, string>) =>
+      item.title.toLowerCase().includes(values.search.toLowerCase())
+  }), []);
+
+  const { filterValues, setFilterValues, applyFilters } = useListFilters(filterFns);
+  const filteredGoals = useMemo(() => applyFilters(goals), [goals, applyFilters]);
+  const { paginatedItems: paginatedGoals, totalPages, safePage } = usePagination(filteredGoals, page);
+
+  useEffect(() => { setPage(1); }, [filterValues]);
+
+  function startEdit(goal: Goal) {
+    setEditingId(goal.id);
+    setForm({
+      title: goal.title,
+      targetAmount: goal.targetAmount,
+      currentAmount: goal.currentAmount,
+      dueDate: goal.dueDate
+    });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,19 +132,37 @@ export function GoalsManager({ initialGoals }: { initialGoals: Goal[] }) {
         </div>
       </form>
 
-      <article className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600"><tr><th className="px-4 py-3">Meta</th><th className="px-4 py-3">Atual</th><th className="px-4 py-3">Alvo</th><th className="px-4 py-3">Prazo</th><th className="px-4 py-3">Ações</th></tr></thead>
-          <tbody>
-            {goals.length === 0 ? <tr><td className="px-4 py-6 text-center text-slate-500" colSpan={5}>Nenhuma meta cadastrada ainda.</td></tr> : goals.map((goal) => (
-              <tr className="border-t border-slate-100" key={goal.id}>
-                <td className="px-4 py-3">{goal.title}</td><td className="px-4 py-3">{formatCurrency(goal.currentAmount)}</td><td className="px-4 py-3">{formatCurrency(goal.targetAmount)}</td><td className="px-4 py-3">{goal.dueDate}</td>
-                <td className="px-4 py-3"><div className="flex gap-2"><button className="rounded-md border border-slate-300 px-2 py-1" type="button" onClick={() => { setEditingId(goal.id); setForm({ title: goal.title, targetAmount: goal.targetAmount, currentAmount: goal.currentAmount, dueDate: goal.dueDate }); }}>Editar</button><button className="rounded-md border border-red-300 px-2 py-1 text-red-700" type="button" onClick={() => removeGoal(goal.id)}>Excluir</button></div></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </article>
+      <ListFilters
+        fields={[
+          { key: "search", label: "Buscar", type: "text", placeholder: "Buscar por título..." }
+        ]}
+        values={filterValues}
+        onChange={setFilterValues}
+        resultCount={filteredGoals.length}
+        totalCount={goals.length}
+      />
+
+      <div className="flex justify-end">
+        <ExportCsvButton filename="metas" headers={["Meta", "Atual", "Alvo", "Prazo"]} rows={exportRows} />
+      </div>
+
+      <ResponsiveTable
+        columns={[
+          { key: "title", label: "Meta", render: (goal: Goal) => goal.title },
+          { key: "current", label: "Atual", render: (goal: Goal) => formatCurrency(goal.currentAmount) },
+          { key: "target", label: "Alvo", render: (goal: Goal) => formatCurrency(goal.targetAmount) },
+          { key: "dueDate", label: "Prazo", render: (goal: Goal) => goal.dueDate }
+        ]}
+        data={paginatedGoals}
+        actions={[
+          { label: "Editar", onClick: startEdit },
+          { label: "Excluir", onClick: (goal: Goal) => removeGoal(goal.id), variant: "danger" }
+        ]}
+        emptyMessage={goals.length === 0 ? "Nenhuma meta cadastrada ainda." : "Nenhuma meta encontrada com os filtros aplicados."}
+        keyExtractor={(goal) => goal.id}
+      />
+
+      <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setPage} />
     </section>
   );
 }
