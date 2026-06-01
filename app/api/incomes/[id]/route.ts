@@ -8,7 +8,7 @@ const updateIncomeSchema = z.object({
   sourceDescription: z.string().optional(),
   amount: z.number().positive().optional(),
   recurring: z.boolean().optional(),
-  competenceDate: z.string().min(7).optional()
+  competenceDate: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Formato YYYY-MM").optional()
 });
 
 export async function PATCH(request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {

@@ -8,7 +8,7 @@ const expenseSchema = z.object({
   description: z.string().optional().default(""),
   amount: z.number().positive(),
   recurring: z.boolean(),
-  competenceDate: z.string().min(7)
+  competenceDate: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Formato YYYY-MM")
 });
 
 export async function POST(request: NextRequest) {

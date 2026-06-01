@@ -8,7 +8,7 @@ const incomeSchema = z.object({
   sourceDescription: z.string(),
   amount: z.number().positive(),
   recurring: z.boolean(),
-  competenceDate: z.string().min(7)
+  competenceDate: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Formato YYYY-MM")
 }).refine((data) => {
   if (data.sourceCategory === "outros") {
     return data.sourceDescription.trim().length > 0;
