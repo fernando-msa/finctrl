@@ -7,7 +7,7 @@ const goalSchema = z.object({
   title: z.string().min(2),
   targetAmount: z.number().positive(),
   currentAmount: z.number().min(0),
-  dueDate: z.string().min(7)
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Formato YYYY-MM-DD")
 });
 
 export async function POST(request: NextRequest) {

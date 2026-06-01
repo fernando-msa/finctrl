@@ -7,7 +7,7 @@ const updateGoalSchema = z.object({
   title: z.string().min(2).optional(),
   targetAmount: z.number().positive().optional(),
   currentAmount: z.number().min(0).optional(),
-  dueDate: z.string().min(7).optional()
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Formato YYYY-MM-DD").optional()
 });
 
 export async function PATCH(request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {

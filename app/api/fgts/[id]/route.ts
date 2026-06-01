@@ -7,7 +7,7 @@ const updateFgtsSchema = z.object({
   accountLabel: z.string().min(2).optional(),
   balance: z.number().min(0).optional(),
   modality: z.enum(["saque_aniversario", "saque_rescisao", "indefinido"]).optional(),
-  updatedAt: z.string().min(7).optional()
+  updatedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Formato YYYY-MM-DD").optional()
 });
 
 export async function PATCH(request: NextRequest, context: { params: { id: string } | Promise<{ id: string }> }) {
